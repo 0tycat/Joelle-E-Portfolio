@@ -98,48 +98,4 @@ function clear(){
   color: var(--text-secondary);
   cursor: pointer;
 }
-/* Theme override for flatpickr to match app variables */
-:deep(.flatpickr-calendar){
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-}
-:deep(.flatpickr-months){
-  border-bottom: 1px solid var(--border-color);
-}
-:deep(.flatpickr-day){
-  color: var(--text-primary);
-}
-:deep(.flatpickr-day:hover){
-  background: var(--bg-secondary);
-}
-:deep(.flatpickr-day.selected),
-:deep(.flatpickr-day.startRange),
-:deep(.flatpickr-day.endRange){
-  background: #3b82f6;
-  color: #ffffff;
-}
-:deep(.flatpickr-monthDropdown-months),
-:deep(.numInputWrapper input){
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-}
-:deep(.flatpickr-weekdays){
-  color: var(--text-secondary);
-}
-:deep(.flatpickr-day.today){
-  border-color: var(--border-color);
-}
-:deep(.flatpickr-day.disabled){
-  color: var(--text-secondary);
-  opacity: 0.5;
-}
-:deep(.flatpickr-months .flatpickr-prev-month svg),
-:deep(.flatpickr-months .flatpickr-next-month svg){
-  fill: var(--text-secondary);
-}
-:deep(.flatpickr-time .numInputWrapper input){
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-}
 </style>
