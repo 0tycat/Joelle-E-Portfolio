@@ -9,6 +9,19 @@ export function clearAuth(){
   localStorage.removeItem('refresh_token')
 }
 
+export async function logout(){
+  const token = localStorage.getItem('access_token')
+  try{
+    await fetch(`${AUTH_URL}/auth/logout`,{
+      method:'POST', headers:{ ...(token?{ Authorization: `Bearer ${token}` }:{} ) }
+    })
+  }catch(err){
+    console.warn('logout error', err)
+  }finally{
+    clearAuth()
+  }
+}
+
 export async function login(email, password){
   try{
     const res = await fetch(`${AUTH_URL}/auth/login`,{

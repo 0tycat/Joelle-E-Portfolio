@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from supabase import create_client, Client
+from functools import wraps
 from dotenv import load_dotenv
 import os
 
@@ -16,6 +17,29 @@ supabase: Client = create_client(
     os.getenv("SUPABASE_URL"),
     os.getenv("SUPABASE_SERVICE_KEY")
 )
+
+# Separate client for auth verification (uses anon key)
+auth_supabase: Client = create_client(
+    os.getenv("SUPABASE_URL"),
+    os.getenv("SUPABASE_ANON_KEY")
+)
+
+
+def require_auth(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer '):
+            return jsonify({'error': 'Unauthorized'}), 401
+        token = auth_header.split(' ')[1]
+        try:
+            user = auth_supabase.auth.get_user(token)
+            if not getattr(user, 'user', None):
+                return jsonify({'error': 'Unauthorized'}), 401
+        except Exception:
+            return jsonify({'error': 'Unauthorized'}), 401
+        return f(*args, **kwargs)
+    return wrapper
 
 # get all work experience records
 @app.route('/work', methods=['GET'])
@@ -39,6 +63,7 @@ def get_work_item(work_id):
 
 # Create new work experience record
 @app.route('/work', methods=['POST'])
+@require_auth
 def create_work():
     try:
         data = request.get_json()
@@ -61,6 +86,7 @@ def create_work():
 
 # Update work experience record
 @app.route('/work/<int:work_id>', methods=['PUT'])
+@require_auth
 def update_work(work_id):
     try:
         data = request.get_json()
@@ -82,6 +108,7 @@ def update_work(work_id):
 
 # Delete work experience record
 @app.route('/work/<int:work_id>', methods=['DELETE'])
+@require_auth
 def delete_work(work_id):
     try:
         response = supabase.table('work_experience').delete().eq('id', work_id).execute()
