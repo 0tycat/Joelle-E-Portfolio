@@ -34,16 +34,17 @@ function emitClose(){ emit('close') }
 }
 .modal-card{
   width: min(720px, 92vw);
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+  color: var(--text-primary);
 }
 .modal-header{
   display:flex; align-items:center; justify-content:space-between;
-  padding: 12px 16px; border-bottom: 1px solid #334155;
+  padding: 12px 16px; border-bottom: 1px solid var(--border-color);
 }
 .modal-title{ margin:0; font-size: 18px; }
-.modal-close{ background: transparent; border: none; color: #e2e8f0; font-size: 22px; cursor: pointer; }
+.modal-close{ background: transparent; border: none; color: var(--text-primary); font-size: 22px; cursor: pointer; }
 .modal-body{ padding: 16px; }
 </style>

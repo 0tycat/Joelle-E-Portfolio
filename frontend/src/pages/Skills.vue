@@ -18,22 +18,32 @@
 
     <!-- Add Modal -->
     <Modal :open="showAdd" title="Add Skill" @close="closeAdd">
-      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+      <div style="display:flex; gap:8px; flex-direction:column">
         <input class="input" v-model="newSkill.skill_name" placeholder="Skill name" />
-        <input class="input" v-model="newSkill.proficiency" placeholder="Proficiency (1-3)" />
-        <button class="btn" @click="addSkill">Save</button>
-        <button class="btn secondary" @click="closeAdd">Cancel</button>
+        <select class="input" v-model="newSkill.proficiency">
+          <option disabled value="">Select proficiency level</option>
+          <option v-for="lvl in profLevels" :key="lvl.id" :value="String(lvl.id)">{{ lvl.level }}</option>
+        </select>
+        <div style="display:flex; gap:8px">
+          <button class="btn" @click="addSkill">Save</button>
+          <button class="btn secondary" @click="closeAdd">Cancel</button>
+        </div>
       </div>
       <p v-if="error" style="color:#fca5a5">{{ error }}</p>
     </Modal>
 
     <!-- Edit Modal -->
     <Modal :open="showEdit" title="Edit Skill" @close="closeEdit">
-      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+      <div style="display:flex; gap:8px; flex-direction:column">
         <input class="input" v-model="editSkill.skill_name" />
-        <input class="input" v-model="editSkill.proficiency" />
-        <button class="btn" @click="performEdit">Save</button>
-        <button class="btn secondary" @click="closeEdit">Cancel</button>
+        <select class="input" v-model="editSkill.proficiency">
+          <option disabled value="">Select proficiency level</option>
+          <option v-for="lvl in profLevels" :key="lvl.id" :value="String(lvl.id)">{{ lvl.level }}</option>
+        </select>
+        <div style="display:flex; gap:8px">
+          <button class="btn" @click="performEdit">Save</button>
+          <button class="btn secondary" @click="closeEdit">Cancel</button>
+        </div>
       </div>
       <p v-if="error" style="color:#fca5a5">{{ error }}</p>
     </Modal>
@@ -51,7 +61,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { apiGet, postSkill, putSkill, deleteSkill } from '../lib/api.js'
+import { apiGet, postSkill, putSkill, deleteSkill, getProfLevels } from '../lib/api.js'
 import { isAuthed } from '../lib/auth.js'
 import Modal from '../components/Modal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
@@ -59,6 +69,7 @@ import ConfirmModal from '../components/ConfirmModal.vue'
 const skills = ref([])
 const loading = ref(true)
 const error = ref('')
+const profLevels = ref([])
 const newSkill = ref({ skill_name:'', proficiency:'' })
 const editingId = ref(null)
 const editSkill = ref({ skill_name:'', proficiency:'' })
@@ -72,7 +83,12 @@ const confirmMessage = computed(() => `Delete "${deleteItemLabel.value}"? This c
 
 async function refresh(){
   try{
-    skills.value = await apiGet('/api/skills')
+    const [levels, skillsData] = await Promise.all([
+      getProfLevels().catch(() => []),
+      apiGet('/api/skills')
+    ])
+    profLevels.value = Array.isArray(levels) ? levels : []
+    skills.value = skillsData
   } finally {
     loading.value = false
   }
@@ -86,7 +102,10 @@ async function addSkill(){
       error.value = 'Provide skill name and proficiency'
       return
     }
-    await postSkill(newSkill.value)
+    await postSkill({
+      skill_name: newSkill.value.skill_name,
+      proficiency: Number(newSkill.value.proficiency)
+    })
     newSkill.value = { skill_name:'', proficiency:'' }
     await refresh()
     showAdd.value = false
@@ -103,7 +122,10 @@ function closeEdit(){ showEdit.value = false; editTargetId = null }
 async function performEdit(){
   error.value = ''
   try{
-    await putSkill(editTargetId, editSkill.value)
+    await putSkill(editTargetId, {
+      skill_name: editSkill.value.skill_name,
+      proficiency: Number(editSkill.value.proficiency)
+    })
     closeEdit()
     await refresh()
   }catch(e){ error.value = 'Update failed' }

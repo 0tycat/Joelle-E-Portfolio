@@ -150,3 +150,8 @@ export async function deleteCommunity(id){
   if(!res.ok) throw new Error('Request failed')
   return await res.json()
 }
+
+// Proficiency Levels (read via composite service)
+export async function getProfLevels(){
+  return apiGet('/api/prof-levels')
+}
