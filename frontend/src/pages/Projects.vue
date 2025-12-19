@@ -8,7 +8,7 @@
     <div v-else>
       <div v-for="p in projects" :key="p.id" class="card">
         <strong>{{ p.project_name }}</strong>
-        <p>{{ p.description }}</p>
+        <p style="white-space:pre-wrap">{{ p.description }}</p>
         <div v-if="isAuthed" style="margin-top:8px; display:flex; gap:8px">
           <button class="btn secondary" @click="startEdit(p)">Edit</button>
           <button class="btn danger" @click="askRemoveProject(p)">Delete</button>
@@ -18,22 +18,26 @@
 
     <!-- Add Modal -->
     <Modal :open="showAdd" title="Add Project" @close="closeAdd">
-      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+      <div style="display:flex; gap:8px; flex-direction:column">
         <input class="input" v-model="newItem.project_name" placeholder="Project name" />
-        <input class="input" v-model="newItem.description" placeholder="Description" />
-        <button class="btn" @click="addProject">Save</button>
-        <button class="btn secondary" @click="closeAdd">Cancel</button>
+        <textarea class="input" v-model="newItem.description" @keydown="handleDescriptionKeydown($event, newItem)" placeholder="Description (press Enter for new bullet)" rows="5" style="resize:vertical"></textarea>
+        <div style="display:flex; gap:8px">
+          <button class="btn" @click="addProject">Save</button>
+          <button class="btn secondary" @click="closeAdd">Cancel</button>
+        </div>
       </div>
       <p v-if="error" style="color:#fca5a5">{{ error }}</p>
     </Modal>
 
     <!-- Edit Modal -->
     <Modal :open="showEdit" title="Edit Project" @close="closeEdit">
-      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+      <div style="display:flex; gap:8px; flex-direction:column">
         <input class="input" v-model="editItem.project_name" placeholder="Project name" />
-        <input class="input" v-model="editItem.description" placeholder="Description" />
-        <button class="btn" @click="performEdit">Save</button>
-        <button class="btn secondary" @click="closeEdit">Cancel</button>
+        <textarea class="input" v-model="editItem.description" @keydown="handleDescriptionKeydown($event, editItem)" placeholder="Description (press Enter for new bullet)" rows="5" style="resize:vertical"></textarea>
+        <div style="display:flex; gap:8px">
+          <button class="btn" @click="performEdit">Save</button>
+          <button class="btn secondary" @click="closeEdit">Cancel</button>
+        </div>
       </div>
       <p v-if="error" style="color:#fca5a5">{{ error }}</p>
     </Modal>
@@ -126,5 +130,38 @@ async function performDelete(){
     closeConfirm()
     await refresh()
   }catch(err){ error.value = 'Delete failed' }
+}
+
+function handleDescriptionKeydown(event, item){
+  if(event.key === 'Enter' && !event.shiftKey){
+    event.preventDefault()
+    const textarea = event.target
+    const cursorPos = textarea.selectionStart
+    const text = item.description || ''
+    const beforeCursor = text.substring(0, cursorPos)
+    const afterCursor = text.substring(cursorPos)
+    
+    // Check if we're at the start or if the line is empty
+    const lines = beforeCursor.split('\n')
+    const currentLine = lines[lines.length - 1]
+    
+    // If current line is just a bullet, remove it instead of adding new one
+    if(currentLine.trim() === '•' || currentLine.trim() === '-'){
+      const newText = text.substring(0, cursorPos - currentLine.length) + afterCursor
+      item.description = newText
+      setTimeout(() => {
+        textarea.selectionStart = textarea.selectionEnd = cursorPos - currentLine.length
+      }, 0)
+      return
+    }
+    
+    // Add new bullet point
+    const bullet = currentLine.trim().startsWith('•') || currentLine.trim().startsWith('-') ? '\n• ' : (beforeCursor.trim() === '' ? '• ' : '\n• ')
+    item.description = beforeCursor + bullet + afterCursor
+    
+    setTimeout(() => {
+      textarea.selectionStart = textarea.selectionEnd = cursorPos + bullet.length
+    }, 0)
+  }
 }
 </script>
