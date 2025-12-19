@@ -2,7 +2,7 @@
   <section>
     <h2>Skills</h2>
     <div v-if="isAuthed" style="margin-bottom:12px">
-      <button class="btn" @click="showAdd=true">Add Skill</button>
+      <button class="btn" @click="showAdd=true"><i class="fas fa-plus"></i> Add Skill</button>
     </div>
     <div v-if="loading">Loading...</div>
     <div v-else>
@@ -10,8 +10,8 @@
         <strong>{{ s.skill_name }}</strong>
         <div>Proficiency: {{ s.proficiency_label ? s.proficiency_label : s.proficiency }}</div>
         <div v-if="isAuthed" style="margin-top:8px; display:flex; gap:8px">
-          <button class="btn secondary" @click="startEdit(s)">Edit</button>
-          <button class="btn danger" @click="askRemoveSkill(s)">Delete</button>
+          <button class="btn secondary" @click="startEdit(s)"><i class="fas fa-edit"></i> Edit</button>
+          <button class="btn danger" @click="askRemoveSkill(s)"><i class="fas fa-trash"></i> Delete</button>
         </div>
       </div>
     </div>
@@ -25,8 +25,8 @@
           <option v-for="lvl in profLevels" :key="lvl.id" :value="String(lvl.id)">{{ lvl.level }}</option>
         </select>
         <div style="display:flex; gap:8px">
-          <button class="btn" @click="addSkill">Save</button>
-          <button class="btn secondary" @click="closeAdd">Cancel</button>
+          <button class="btn" @click="addSkill"><i class="fas fa-save"></i> Save</button>
+          <button class="btn secondary" @click="closeAdd"><i class="fas fa-times"></i> Cancel</button>
         </div>
       </div>
       <p v-if="error" style="color:#fca5a5">{{ error }}</p>
@@ -41,8 +41,8 @@
           <option v-for="lvl in profLevels" :key="lvl.id" :value="String(lvl.id)">{{ lvl.level }}</option>
         </select>
         <div style="display:flex; gap:8px">
-          <button class="btn" @click="performEdit">Save</button>
-          <button class="btn secondary" @click="closeEdit">Cancel</button>
+          <button class="btn" @click="performEdit"><i class="fas fa-save"></i> Save</button>
+          <button class="btn secondary" @click="closeEdit"><i class="fas fa-times"></i> Cancel</button>
         </div>
       </div>
       <p v-if="error" style="color:#fca5a5">{{ error }}</p>

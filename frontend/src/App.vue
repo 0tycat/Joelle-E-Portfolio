@@ -7,8 +7,9 @@
         <span></span>
       </button>
     </header>
-    <button class="floating-theme-toggle" @click="isDark = !isDark">
-      {{ isDark ? '☀️ Light' : '🌙 Dark' }}
+    <button class="floating-theme-toggle" @click="isDark = !isDark" title="Toggle dark/light mode">
+      <i :class="isDark ? 'fas fa-sun' : 'fas fa-moon'"></i>
+      {{ isDark ? 'Light' : 'Dark' }}
     </button>
     <div class="app-main">
       <Sidebar />
@@ -24,6 +25,7 @@
 import { ref, provide, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useTheme } from './lib/theme.js'
 import Sidebar from './components/Sidebar.vue'
+import '@fortawesome/fontawesome-free/css/all.min.css'
 
 const { isDark } = useTheme()
 const sidebarOpen = ref(false)
