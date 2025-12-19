@@ -9,7 +9,7 @@ load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/auth/*": {"origins": "*"}})
 
 # Initialize Supabase client
 supabase: Client = create_client(
