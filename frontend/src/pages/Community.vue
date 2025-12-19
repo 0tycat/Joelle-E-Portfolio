@@ -2,7 +2,7 @@
   <section>
     <h2>Community Service</h2>
     <div v-if="isAuthed" style="margin-bottom:12px">
-      <button class="btn" @click="showAdd=true">Add Community Service</button>
+      <button class="btn" @click="showAdd=true"><i class="fas fa-plus"></i> Add Community Service</button>
     </div>
     <div v-if="loading">Loading...</div>
     <div v-else>
@@ -12,8 +12,8 @@
         <div v-if="c.start_date || c.end_date" style="margin:4px 0">{{ formatDate(c.start_date) }} - {{ c.end_date ? formatDate(c.end_date) : 'Present' }}</div>
         <p style="white-space:pre-wrap">{{ c.description }}</p>
         <div v-if="isAuthed" style="margin-top:8px; display:flex; gap:8px">
-          <button class="btn secondary" @click="startEdit(c)">Edit</button>
-          <button class="btn danger" @click="askRemoveCommunity(c)">Delete</button>
+          <button class="btn secondary" @click="startEdit(c)"><i class="fas fa-edit"></i> Edit</button>
+          <button class="btn danger" @click="askRemoveCommunity(c)"><i class="fas fa-trash"></i> Delete</button>
         </div>
       </div>
     </div>
@@ -29,8 +29,8 @@
         </div>
         <textarea class="input" v-model="newItem.description" @keydown="handleDescriptionKeydown($event, newItem)" placeholder="Description (press Enter for new bullet)" rows="5" style="resize:vertical"></textarea>
         <div style="display:flex; gap:8px">
-          <button class="btn" @click="addCommunity">Save</button>
-          <button class="btn secondary" @click="closeAdd">Cancel</button>
+          <button class="btn" @click="addCommunity"><i class="fas fa-save"></i> Save</button>
+          <button class="btn secondary" @click="closeAdd"><i class="fas fa-times"></i> Cancel</button>
         </div>
       </div>
       <p v-if="error" style="color:#fca5a5">{{ error }}</p>
@@ -47,8 +47,8 @@
         </div>
         <textarea class="input" v-model="editItem.description" @keydown="handleDescriptionKeydown($event, editItem)" placeholder="Description (press Enter for new bullet)" rows="5" style="resize:vertical"></textarea>
         <div style="display:flex; gap:8px">
-          <button class="btn" @click="performEdit">Save</button>
-          <button class="btn secondary" @click="closeEdit">Cancel</button>
+          <button class="btn" @click="performEdit"><i class="fas fa-save"></i> Save</button>
+          <button class="btn secondary" @click="closeEdit"><i class="fas fa-times"></i> Cancel</button>
         </div>
       </div>
       <p v-if="error" style="color:#fca5a5">{{ error }}</p>
