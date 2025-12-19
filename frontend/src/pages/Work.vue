@@ -23,8 +23,8 @@
       <div style="display:flex; gap:8px; flex-direction:column">
         <input class="input" v-model="newItem.company_name" placeholder="Company" />
         <input class="input" v-model="newItem.role" placeholder="Role" />
-        <input class="input" v-model="newItem.start_date" placeholder="Start (YYYY-MM-DD)" />
-        <input class="input" v-model="newItem.end_date" placeholder="End (YYYY-MM-DD)" />
+        <DatePicker v-model="newItem.start_date" placeholder="Start (YYYY-MM-DD)" />
+        <DatePicker v-model="newItem.end_date" placeholder="End (YYYY-MM-DD)" />
         <textarea class="input" v-model="newItem.description" @keydown="handleDescriptionKeydown($event, newItem)" placeholder="Description (press Enter for new bullet)" rows="5" style="resize:vertical"></textarea>
         <div style="display:flex; gap:8px">
           <button class="btn" @click="addWork">Save</button>
@@ -39,8 +39,8 @@
       <div style="display:flex; gap:8px; flex-direction:column">
         <input class="input" v-model="editItem.company_name" placeholder="Company" />
         <input class="input" v-model="editItem.role" placeholder="Role" />
-        <input class="input" v-model="editItem.start_date" placeholder="Start (YYYY-MM-DD)" />
-        <input class="input" v-model="editItem.end_date" placeholder="End (YYYY-MM-DD)" />
+        <DatePicker v-model="editItem.start_date" placeholder="Start (YYYY-MM-DD)" />
+        <DatePicker v-model="editItem.end_date" placeholder="End (YYYY-MM-DD)" />
         <textarea class="input" v-model="editItem.description" @keydown="handleDescriptionKeydown($event, editItem)" placeholder="Description (press Enter for new bullet)" rows="5" style="resize:vertical"></textarea>
         <div style="display:flex; gap:8px">
           <button class="btn" @click="performEdit">Save</button>
@@ -67,6 +67,7 @@ import { apiGet, postWork, deleteWork, putWork } from '../lib/api.js'
 import { isAuthed as authIsAuthed } from '../lib/auth.js'
 import Modal from '../components/Modal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
+import DatePicker from '../components/DatePicker.vue'
 
 const work = ref([])
 const loading = ref(true)
