@@ -129,3 +129,24 @@ export async function deleteProject(id){
   if(!res.ok) throw new Error('Request failed')
   return await res.json()
 }
+
+// Community write API
+export async function postCommunity(payload){
+  const res = await fetch(`${COMMUNITY_URL}/community`,{
+    method:'POST', headers:{ 'Content-Type':'application/json', ...authHeader() }, body: JSON.stringify(payload)
+  })
+  if(!res.ok) throw new Error('Request failed')
+  return await res.json()
+}
+export async function putCommunity(id, payload){
+  const res = await fetch(`${COMMUNITY_URL}/community/${id}`,{
+    method:'PUT', headers:{ 'Content-Type':'application/json', ...authHeader() }, body: JSON.stringify(payload)
+  })
+  if(!res.ok) throw new Error('Request failed')
+  return await res.json()
+}
+export async function deleteCommunity(id){
+  const res = await fetch(`${COMMUNITY_URL}/community/${id}`,{ method:'DELETE', headers:{ ...authHeader() } })
+  if(!res.ok) throw new Error('Request failed')
+  return await res.json()
+}

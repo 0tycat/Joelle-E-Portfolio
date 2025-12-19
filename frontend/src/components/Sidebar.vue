@@ -4,6 +4,7 @@
       <RouterLink to="/skills" @click="closeOnMobile">Skills</RouterLink>
       <RouterLink to="/experience" @click="closeOnMobile">Work Experience</RouterLink>
       <RouterLink to="/education" @click="closeOnMobile">Education</RouterLink>
+      <RouterLink to="/community" @click="closeOnMobile">Community Service</RouterLink>
       <RouterLink to="/other-information" @click="closeOnMobile">Other Information</RouterLink>
       <div class="auth-section">
         <button v-if="!isAuthed" class="btn" @click="goLogin">Login</button>
