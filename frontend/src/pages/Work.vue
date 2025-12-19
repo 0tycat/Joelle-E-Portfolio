@@ -9,7 +9,7 @@
       <div v-for="w in work" :key="w.id" class="card">
         <strong>{{ w.company_name }}</strong>
         <div>{{ w.role }}</div>
-        <div>{{ w.start_date }} - {{ w.end_date || 'Present' }}</div>
+        <div>{{ formatDate(w.start_date) }} - {{ w.end_date ? formatDate(w.end_date) : 'Present' }}</div>
         <p style="white-space:pre-wrap">{{ w.description }}</p>
         <div v-if="isAuthed" style="margin-top:8px; display:flex; gap:8px">
           <button class="btn secondary" @click="startEdit(w)">Edit</button>
@@ -68,6 +68,7 @@ import { isAuthed as authIsAuthed } from '../lib/auth.js'
 import Modal from '../components/Modal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
 import DatePicker from '../components/DatePicker.vue'
+import { formatDate } from '../lib/date.js'
 
 const work = ref([])
 const loading = ref(true)

@@ -9,6 +9,7 @@
       <div v-for="c in community" :key="c.id" class="card">
         <strong>{{ c.programme_name }}</strong>
         <div>Role: {{ c.role }}</div>
+        <div v-if="c.start_date || c.end_date" style="margin:4px 0">{{ formatDate(c.start_date) }} - {{ c.end_date ? formatDate(c.end_date) : 'Present' }}</div>
         <p style="white-space:pre-wrap">{{ c.description }}</p>
         <div v-if="isAuthed" style="margin-top:8px; display:flex; gap:8px">
           <button class="btn secondary" @click="startEdit(c)">Edit</button>
@@ -22,6 +23,10 @@
       <div style="display:flex; gap:8px; flex-direction:column">
         <input class="input" v-model="newItem.programme_name" placeholder="Programme Name" />
         <input class="input" v-model="newItem.role" placeholder="Role" />
+        <div style="display:flex; gap:8px">
+          <DatePicker v-model="newItem.start_date" placeholder="Start (YYYY-MM-DD)" />
+          <DatePicker v-model="newItem.end_date" placeholder="End (YYYY-MM-DD)" />
+        </div>
         <textarea class="input" v-model="newItem.description" @keydown="handleDescriptionKeydown($event, newItem)" placeholder="Description (press Enter for new bullet)" rows="5" style="resize:vertical"></textarea>
         <div style="display:flex; gap:8px">
           <button class="btn" @click="addCommunity">Save</button>
@@ -36,6 +41,10 @@
       <div style="display:flex; gap:8px; flex-direction:column">
         <input class="input" v-model="editItem.programme_name" placeholder="Programme Name" />
         <input class="input" v-model="editItem.role" placeholder="Role" />
+        <div style="display:flex; gap:8px">
+          <DatePicker v-model="editItem.start_date" placeholder="Start (YYYY-MM-DD)" />
+          <DatePicker v-model="editItem.end_date" placeholder="End (YYYY-MM-DD)" />
+        </div>
         <textarea class="input" v-model="editItem.description" @keydown="handleDescriptionKeydown($event, editItem)" placeholder="Description (press Enter for new bullet)" rows="5" style="resize:vertical"></textarea>
         <div style="display:flex; gap:8px">
           <button class="btn" @click="performEdit">Save</button>
@@ -62,13 +71,15 @@ import { apiGet, postCommunity, putCommunity, deleteCommunity } from '../lib/api
 import { isAuthed as authIsAuthed } from '../lib/auth.js'
 import Modal from '../components/Modal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
+import DatePicker from '../components/DatePicker.vue'
+import { formatDate } from '../lib/date.js'
 
 const community = ref([])
 const loading = ref(true)
 const error = ref('')
 const isAuthed = authIsAuthed
-const newItem = ref({ programme_name:'', role:'', description:'' })
-const editItem = ref({ programme_name:'', role:'', description:'' })
+const newItem = ref({ programme_name:'', role:'', start_date:'', end_date:'', description:'' })
+const editItem = ref({ programme_name:'', role:'', start_date:'', end_date:'', description:'' })
 const showAdd = ref(false)
 const showEdit = ref(false)
 let editTargetId = null
@@ -90,14 +101,14 @@ async function addCommunity(){
   error.value = ''
   try{
     await postCommunity(newItem.value)
-    newItem.value = { programme_name:'', role:'', description:'' }
+    newItem.value = { programme_name:'', role:'', start_date:'', end_date:'', description:'' }
     await refresh()
     showAdd.value = false
   }catch(e){ error.value = 'Add failed' }
 }
 
 function startEdit(c){
-  editItem.value = { programme_name:c.programme_name, role:c.role, description:c.description }
+  editItem.value = { programme_name:c.programme_name, role:c.role, start_date:c.start_date || '', end_date:c.end_date || '', description:c.description }
   editTargetId = c.id
   showEdit.value = true
 }
