@@ -14,12 +14,11 @@
 </template>
 
 <script setup>
-import { computed, inject } from 'vue'
+import { inject } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
-import { isAuthenticated, logout as doLogout } from '../lib/auth.js'
+import { isAuthed, logout as doLogout } from '../lib/auth.js'
 
 const router = useRouter()
-const isAuthed = computed(() => isAuthenticated())
 const isOpen = inject('sidebarOpen')
 
 function closeOnMobile() {

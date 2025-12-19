@@ -52,14 +52,14 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { apiGet, postProject, deleteProject, putProject } from '../lib/api.js'
-import { isAuthenticated } from '../lib/auth.js'
+import { isAuthed as authIsAuthed } from '../lib/auth.js'
 import Modal from '../components/Modal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
 
 const projects = ref([])
 const loading = ref(true)
 const error = ref('')
-const isAuthed = computed(() => isAuthenticated())
+const isAuthed = authIsAuthed
 const newItem = ref({ project_name:'', description:'' })
 const editItem = ref({ project_name:'', description:'' })
 const showAdd = ref(false)

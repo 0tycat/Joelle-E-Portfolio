@@ -1,6 +1,8 @@
 import { ref, watch } from 'vue'
 
-const isDark = ref(localStorage.getItem('theme') === 'dark' || true)
+const stored = localStorage.getItem('theme')
+const prefersDark = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+const isDark = ref(stored ? stored === 'dark' : prefersDark)
 
 export function useTheme() {
   watch(isDark, (newVal) => {

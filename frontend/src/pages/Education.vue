@@ -57,14 +57,14 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { apiGet, postEducation, deleteEducation, putEducation } from '../lib/api.js'
-import { isAuthenticated } from '../lib/auth.js'
+import { isAuthed as authIsAuthed } from '../lib/auth.js'
 import Modal from '../components/Modal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
 
 const education = ref([])
 const loading = ref(true)
 const error = ref('')
-const isAuthed = computed(() => isAuthenticated())
+const isAuthed = authIsAuthed
 const newItem = ref({ institute_name:'', certification:'', start_date:'', finish_date:'' })
 const editItem = ref({ institute_name:'', certification:'', start_date:'', finish_date:'' })
 const showAdd = ref(false)
