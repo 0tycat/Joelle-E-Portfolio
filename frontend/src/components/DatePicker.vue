@@ -49,7 +49,7 @@ onMounted(() => {
     dateFormat: props.dateFormat,
     defaultDate: internalValue.value || undefined,
     allowInput: false,
-    disableMobile: false,
+    disableMobile: true,
     monthSelectorType: 'dropdown',
     minDate: props.minDate || undefined,
     maxDate: props.maxDate || undefined,
@@ -126,5 +126,20 @@ function clear(){
 }
 :deep(.flatpickr-weekdays){
   color: var(--text-secondary);
+}
+:deep(.flatpickr-day.today){
+  border-color: var(--border-color);
+}
+:deep(.flatpickr-day.disabled){
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+:deep(.flatpickr-months .flatpickr-prev-month svg),
+:deep(.flatpickr-months .flatpickr-next-month svg){
+  fill: var(--text-secondary);
+}
+:deep(.flatpickr-time .numInputWrapper input){
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 </style>

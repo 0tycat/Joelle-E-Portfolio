@@ -76,6 +76,11 @@ def create_community():
             'role': data.get('role'),
             'description': data.get('description')
         }
+        # Optional date fields if provided
+        if 'start_date' in data and data.get('start_date') != '':
+            new_item['start_date'] = data.get('start_date')
+        if 'end_date' in data and data.get('end_date') != '':
+            new_item['end_date'] = data.get('end_date')
 
         response = supabase.table('community_service').insert(new_item).execute()
         return jsonify({'data': response.data, 'message': 'Community service record created'}), 201
@@ -89,7 +94,7 @@ def update_community(item_id):
     try:
         data = request.get_json()
         update_data = {}
-        for key in ['programme_name', 'role', 'description']:
+        for key in ['programme_name', 'role', 'description', 'start_date', 'end_date']:
             if key in data:
                 update_data[key] = data[key]
         if not update_data:

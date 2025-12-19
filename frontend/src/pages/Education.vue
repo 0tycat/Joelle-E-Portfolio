@@ -9,7 +9,7 @@
       <div v-for="e in education" :key="e.id" class="card">
         <strong>{{ e.institute_name }}</strong>
         <div>{{ e.certification }}</div>
-        <div>{{ e.start_date }} - {{ e.finish_date }}</div>
+        <div>{{ formatDate(e.start_date) }} - {{ formatDate(e.finish_date) }}</div>
         <div v-if="isAuthed" style="margin-top:8px; display:flex; gap:8px">
           <button class="btn secondary" @click="startEdit(e)">Edit</button>
           <button class="btn danger" @click="askRemoveEducation(e)">Delete</button>
@@ -61,6 +61,7 @@ import { isAuthed as authIsAuthed } from '../lib/auth.js'
 import Modal from '../components/Modal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
 import DatePicker from '../components/DatePicker.vue'
+import { formatDate } from '../lib/date.js'
 
 const education = ref([])
 const loading = ref(true)
