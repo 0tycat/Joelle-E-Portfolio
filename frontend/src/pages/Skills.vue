@@ -52,14 +52,13 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { apiGet, postSkill, putSkill, deleteSkill } from '../lib/api.js'
-import { isAuthenticated } from '../lib/auth.js'
+import { isAuthed } from '../lib/auth.js'
 import Modal from '../components/Modal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
 
 const skills = ref([])
 const loading = ref(true)
 const error = ref('')
-const isAuthed = computed(() => isAuthenticated())
 const newSkill = ref({ skill_name:'', proficiency:'' })
 const editingId = ref(null)
 const editSkill = ref({ skill_name:'', proficiency:'' })

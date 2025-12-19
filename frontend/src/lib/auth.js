@@ -1,16 +1,29 @@
+import { ref, computed } from 'vue'
+
 const AUTH_URL = import.meta.env.VITE_AUTH_URL || 'http://127.0.0.1:5005'
 
-export function isAuthenticated(){
-  return !!localStorage.getItem('access_token')
+// Reactive auth token state shared across app
+export const authToken = ref(localStorage.getItem('access_token'))
+export const isAuthed = computed(() => !!authToken.value)
+
+function setAccessToken(token){
+  authToken.value = token || null
+  if(token){
+    localStorage.setItem('access_token', token)
+  } else {
+    localStorage.removeItem('access_token')
+  }
+  // Broadcast a lightweight event for any non-Vue listeners
+  window.dispatchEvent(new CustomEvent('auth:changed', { detail: { authed: !!token } }))
 }
 
 export function clearAuth(){
-  localStorage.removeItem('access_token')
+  setAccessToken(null)
   localStorage.removeItem('refresh_token')
 }
 
 export async function logout(){
-  const token = localStorage.getItem('access_token')
+  const token = authToken.value
   try{
     await fetch(`${AUTH_URL}/auth/logout`,{
       method:'POST', headers:{ ...(token?{ Authorization: `Bearer ${token}` }:{} ) }
@@ -32,7 +45,7 @@ export async function login(email, password){
     if(!res.ok) return false
     const data = await res.json()
     if(data.access_token){
-      localStorage.setItem('access_token', data.access_token)
+      setAccessToken(data.access_token)
       if(data.refresh_token){
         localStorage.setItem('refresh_token', data.refresh_token)
       }
@@ -43,4 +56,9 @@ export async function login(email, password){
     console.error('login error', err)
     return false
   }
+}
+
+// Back-compat function; prefer using `isAuthed` directly
+export function isAuthenticated(){
+  return isAuthed.value
 }
