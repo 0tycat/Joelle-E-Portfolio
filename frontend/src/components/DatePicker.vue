@@ -116,8 +116,8 @@ function clear(){
 :deep(.flatpickr-day.selected),
 :deep(.flatpickr-day.startRange),
 :deep(.flatpickr-day.endRange){
-  background: var(--accent-color);
-  color: var(--bg-primary);
+  background: #3b82f6;
+  color: #ffffff;
 }
 :deep(.flatpickr-monthDropdown-months),
 :deep(.numInputWrapper input){

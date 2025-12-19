@@ -22,8 +22,8 @@
       <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
         <input class="input" v-model="newItem.institute_name" placeholder="Institute" />
         <input class="input" v-model="newItem.certification" placeholder="Certification" />
-        <input class="input" v-model="newItem.start_date" placeholder="Start (YYYY-MM-DD)" />
-        <input class="input" v-model="newItem.finish_date" placeholder="Finish (YYYY-MM-DD)" />
+        <DatePicker v-model="newItem.start_date" placeholder="Start (YYYY-MM-DD)" />
+        <DatePicker v-model="newItem.finish_date" placeholder="Finish (YYYY-MM-DD)" />
         <button class="btn" @click="addEducation">Save</button>
         <button class="btn secondary" @click="closeAdd">Cancel</button>
       </div>
@@ -35,8 +35,8 @@
       <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
         <input class="input" v-model="editItem.institute_name" placeholder="Institute" />
         <input class="input" v-model="editItem.certification" placeholder="Certification" />
-        <input class="input" v-model="editItem.start_date" placeholder="Start (YYYY-MM-DD)" />
-        <input class="input" v-model="editItem.finish_date" placeholder="Finish (YYYY-MM-DD)" />
+        <DatePicker v-model="editItem.start_date" placeholder="Start (YYYY-MM-DD)" />
+        <DatePicker v-model="editItem.finish_date" placeholder="Finish (YYYY-MM-DD)" />
         <button class="btn" @click="performEdit">Save</button>
         <button class="btn secondary" @click="closeEdit">Cancel</button>
       </div>
@@ -60,6 +60,7 @@ import { apiGet, postEducation, deleteEducation, putEducation } from '../lib/api
 import { isAuthed as authIsAuthed } from '../lib/auth.js'
 import Modal from '../components/Modal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
+import DatePicker from '../components/DatePicker.vue'
 
 const education = ref([])
 const loading = ref(true)
