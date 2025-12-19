@@ -8,7 +8,7 @@
     <div v-else>
       <div v-for="s in skills" :key="s.id" class="card">
         <strong>{{ s.skill_name }}</strong>
-        <div>Proficiency: {{ s.proficiency }}</div>
+        <div>Proficiency: {{ s.proficiency_label ? s.proficiency_label : s.proficiency }}</div>
         <div v-if="isAuthed" style="margin-top:8px; display:flex; gap:8px">
           <button class="btn secondary" @click="startEdit(s)">Edit</button>
           <button class="btn danger" @click="askRemoveSkill(s)">Delete</button>

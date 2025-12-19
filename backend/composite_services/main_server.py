@@ -17,12 +17,41 @@ supabase: Client = create_client(
     os.getenv("SUPABASE_SERVICE_KEY")
 )
 
-# Skills endpoint with proficiency levels
+# Skills endpoint with proficiency labels resolved from prof_level table
 @app.route('/api/skills', methods=['GET'])
 def get_skills():
     try:
-        response = supabase.table('skills').select('*').execute()
-        return jsonify(response.data), 200
+        skills_res = supabase.table('skills').select('*').execute()
+        skills = skills_res.data or []
+
+        # Attempt to fetch proficiency levels mapping from `prof_lvl`
+        try:
+            levels_res = supabase.table('prof_lvl').select('*').execute()
+            levels = levels_res.data or []
+            level_map = {}
+            for lvl in levels:
+                key_raw = lvl.get('id') or lvl.get('level') or lvl.get('value')
+                key_str = str(key_raw).strip() if key_raw is not None else None
+                label = (
+                    lvl.get('level')
+                    or lvl.get('label')
+                    or lvl.get('name')
+                    or lvl.get('level_name')
+                    or key_str
+                )
+                if key_str:
+                    level_map[key_str] = label
+            # attach label
+            for s in skills:
+                prof_val = s.get('proficiency')
+                key_lookup = str(prof_val).strip() if prof_val is not None else None
+                if key_lookup and key_lookup in level_map:
+                    s['proficiency_label'] = level_map.get(key_lookup)
+        except Exception:
+            # If mapping fails, return skills without labels
+            pass
+
+        return jsonify(skills), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -71,9 +100,34 @@ def get_portfolio():
         work = supabase.table('work_experience').select('*').order('start_date', desc=True).execute()
         community = supabase.table('community_service').select('*').execute()
         projects = supabase.table('other_information').select('*').execute()
-        
+        # Try to resolve proficiency labels for portfolio skills as well
+        skills_data = skills.data or []
+        try:
+            levels_res = supabase.table('prof_lvl').select('*').execute()
+            levels = levels_res.data or []
+            level_map = {}
+            for lvl in levels:
+                key_raw = lvl.get('id') or lvl.get('level') or lvl.get('value')
+                key_str = str(key_raw).strip() if key_raw is not None else None
+                label = (
+                    lvl.get('level')
+                    or lvl.get('label')
+                    or lvl.get('name')
+                    or lvl.get('level_name')
+                    or key_str
+                )
+                if key_str:
+                    level_map[key_str] = label
+            for s in skills_data:
+                prof_val = s.get('proficiency')
+                key_lookup = str(prof_val).strip() if prof_val is not None else None
+                if key_lookup and key_lookup in level_map:
+                    s['proficiency_label'] = level_map.get(key_lookup)
+        except Exception:
+            pass
+
         return jsonify({
-            'skills': skills.data,
+            'skills': skills_data,
             'education': education.data,
             'work': work.data,
             'community': community.data,
