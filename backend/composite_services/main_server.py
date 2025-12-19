@@ -91,6 +91,16 @@ def get_projects():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Proficiency levels endpoint (for Skills dropdown)
+@app.route('/api/prof-levels', methods=['GET'])
+def get_prof_levels():
+    try:
+        # Table name: prof_lvl with columns id (varchar/int) and level (text)
+        response = supabase.table('prof_lvl').select('*').execute()
+        return jsonify(response.data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # Get all portfolio data at once
 @app.route('/api/portfolio', methods=['GET'])
 def get_portfolio():
