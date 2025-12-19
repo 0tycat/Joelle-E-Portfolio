@@ -21,7 +21,7 @@ supabase: Client = create_client(
 @app.route('/api/skills', methods=['GET'])
 def get_skills():
     try:
-        response = supabase.schema('public').table('skills').select('*').execute()
+        response = supabase.table('skills').select('*').execute()
         return jsonify(response.data), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -30,7 +30,7 @@ def get_skills():
 @app.route('/api/education', methods=['GET'])
 def get_education():
     try:
-        response = supabase.schema('public').table('education').select('*').order('start_date', desc=True).execute()
+        response = supabase.table('education').select('*').order('start_date', desc=True).execute()
         return jsonify(response.data), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -39,7 +39,7 @@ def get_education():
 @app.route('/api/work', methods=['GET'])
 def get_work():
     try:
-        response = supabase.schema('public').table('work_experience').select('*').order('start_date', desc=True).execute()
+        response = supabase.table('work_experience').select('*').order('start_date', desc=True).execute()
         return jsonify(response.data), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -48,7 +48,7 @@ def get_work():
 @app.route('/api/community', methods=['GET'])
 def get_community():
     try:
-        response = supabase.schema('public').table('community_service').select('*').execute()
+        response = supabase.table('community_service').select('*').execute()
         return jsonify(response.data), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -57,7 +57,7 @@ def get_community():
 @app.route('/api/projects', methods=['GET'])
 def get_projects():
     try:
-        response = supabase.schema('public').table('other_information').select('*').execute()
+        response = supabase.table('other_information').select('*').execute()
         return jsonify(response.data), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -66,11 +66,11 @@ def get_projects():
 @app.route('/api/portfolio', methods=['GET'])
 def get_portfolio():
     try:
-        skills = supabase.schema('public').table('skills').select('*').execute()
-        education = supabase.schema('public').table('education').select('*').order('start_date', desc=True).execute()
-        work = supabase.schema('public').table('work_experience').select('*').order('start_date', desc=True).execute()
-        community = supabase.schema('public').table('community_service').select('*').execute()
-        projects = supabase.schema('public').table('other_information').select('*').execute()
+        skills = supabase.table('skills').select('*').execute()
+        education = supabase.table('education').select('*').order('start_date', desc=True).execute()
+        work = supabase.table('work_experience').select('*').order('start_date', desc=True).execute()
+        community = supabase.table('community_service').select('*').execute()
+        projects = supabase.table('other_information').select('*').execute()
         
         return jsonify({
             'skills': skills.data,
@@ -83,4 +83,4 @@ def get_portfolio():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8000)
+    app.run(debug=True, host='0.0.0.0', port=8000)

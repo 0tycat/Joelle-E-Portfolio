@@ -21,7 +21,7 @@ supabase: Client = create_client(
 @app.route('/projects', methods=['GET'])
 def get_projects():
     try:
-        response = supabase.schema('public').table('other_information').select('*').execute()
+        response = supabase.table('other_information').select('*').execute()
         return jsonify({'data': response.data, 'count': len(response.data)}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -30,7 +30,7 @@ def get_projects():
 @app.route('/projects/<int:project_id>', methods=['GET'])
 def get_project_item(project_id):
     try:
-        response = supabase.schema('public').table('other_information').select('*').eq('id', project_id).execute()
+        response = supabase.table('other_information').select('*').eq('id', project_id).execute()
         if response.data:
             return jsonify(response.data[0]), 200
         return jsonify({'error': 'Project not found'}), 404
@@ -53,7 +53,7 @@ def create_project():
             'files': data.get('files')
         }
 
-        response = supabase.schema('public').table('other_information').insert(new_item).execute()
+        response = supabase.table('other_information').insert(new_item).execute()
         return jsonify({'data': response.data, 'message': 'Project created'}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -72,7 +72,7 @@ def update_project(project_id):
         if not update_data:
             return jsonify({'error': 'No fields to update'}), 400
 
-        response = supabase.schema('public').table('other_information').update(update_data).eq('id', project_id).execute()
+        response = supabase.table('other_information').update(update_data).eq('id', project_id).execute()
         if response.data:
             return jsonify({'data': response.data, 'message': 'Project updated'}), 200
         return jsonify({'error': 'Project not found'}), 404
@@ -83,7 +83,7 @@ def update_project(project_id):
 @app.route('/projects/<int:project_id>', methods=['DELETE'])
 def delete_project(project_id):
     try:
-        response = supabase.schema('public').table('other_information').delete().eq('id', project_id).execute()
+        response = supabase.table('other_information').delete().eq('id', project_id).execute()
         if response.data:
             return jsonify({'message': 'Project deleted'}), 200
         return jsonify({'error': 'Project not found'}), 404
@@ -91,4 +91,4 @@ def delete_project(project_id):
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5004)
+    app.run(debug=True, host='0.0.0.0', port=5004)

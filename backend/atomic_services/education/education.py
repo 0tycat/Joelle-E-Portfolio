@@ -21,7 +21,7 @@ supabase: Client = create_client(
 @app.route('/education', methods=['GET'])
 def get_education():
     try:
-        response = supabase.schema('public').table('education').select('*').order('start_date', desc=True).execute()
+        response = supabase.table('education').select('*').order('start_date', desc=True).execute()
         return jsonify({'data': response.data, 'count': len(response.data)}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -30,7 +30,7 @@ def get_education():
 @app.route('/education/<int:edu_id>', methods=['GET'])
 def get_education_item(edu_id):
     try:
-        response = supabase.schema('public').table('education').select('*').eq('id', edu_id).execute()
+        response = supabase.table('education').select('*').eq('id', edu_id).execute()
         if response.data:
             return jsonify(response.data[0]), 200
         return jsonify({'error': 'Education record not found'}), 404
@@ -53,7 +53,7 @@ def create_education():
             'finish_date': data.get('finish_date')
         }
 
-        response = supabase.schema('public').table('education').insert(new_item).execute()
+        response = supabase.table('education').insert(new_item).execute()
         return jsonify({'data': response.data, 'message': 'Education record created'}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -71,7 +71,7 @@ def update_education(edu_id):
         if not update_data:
             return jsonify({'error': 'No fields to update'}), 400
 
-        response = supabase.schema('public').table('education').update(update_data).eq('id', edu_id).execute()
+        response = supabase.table('education').update(update_data).eq('id', edu_id).execute()
         if response.data:
             return jsonify({'data': response.data, 'message': 'Education record updated'}), 200
         return jsonify({'error': 'Education record not found'}), 404
@@ -81,7 +81,7 @@ def update_education(edu_id):
 @app.route('/education/<int:edu_id>', methods=['DELETE'])
 def delete_education(edu_id):
     try:
-        response = supabase.schema('public').table('education').delete().eq('id', edu_id).execute()
+        response = supabase.table('education').delete().eq('id', edu_id).execute()
         if response.data:
             return jsonify({'message': 'Education record deleted'}), 200
         return jsonify({'error': 'Education record not found'}), 404
@@ -89,4 +89,4 @@ def delete_education(edu_id):
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(debug=True, host='0.0.0.0', port=5001)
