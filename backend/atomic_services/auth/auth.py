@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from supabase import create_client, Client
+from functools import wraps
 from dotenv import load_dotenv
 import os
 
@@ -16,6 +17,23 @@ supabase: Client = create_client(
     os.getenv("SUPABASE_URL"),
     os.getenv("SUPABASE_ANON_KEY")  # Use anon key for auth
 )
+
+
+def require_auth(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer '):
+            return jsonify({'error': 'Unauthorized'}), 401
+        token = auth_header.split(' ')[1]
+        try:
+            user = supabase.auth.get_user(token)
+            if not getattr(user, 'user', None):
+                return jsonify({'error': 'Unauthorized'}), 401
+        except Exception:
+            return jsonify({'error': 'Unauthorized'}), 401
+        return f(*args, **kwargs)
+    return wrapper
 
 # User login
 @app.route('/auth/login', methods=['POST'])
@@ -48,6 +66,7 @@ def login():
 
 # User logout
 @app.route('/auth/logout', methods=['POST'])
+@require_auth
 def logout():
     """Logout user - just return success message"""
     try:

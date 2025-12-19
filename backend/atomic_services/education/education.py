@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from supabase import create_client, Client
+from functools import wraps
 from dotenv import load_dotenv
 import os
 
@@ -16,6 +17,29 @@ supabase: Client = create_client(
     os.getenv("SUPABASE_URL"),
     os.getenv("SUPABASE_SERVICE_KEY")
 )
+
+# Separate client for auth verification (uses anon key)
+auth_supabase: Client = create_client(
+    os.getenv("SUPABASE_URL"),
+    os.getenv("SUPABASE_ANON_KEY")
+)
+
+
+def require_auth(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer '):
+            return jsonify({'error': 'Unauthorized'}), 401
+        token = auth_header.split(' ')[1]
+        try:
+            user = auth_supabase.auth.get_user(token)
+            if not getattr(user, 'user', None):
+                return jsonify({'error': 'Unauthorized'}), 401
+        except Exception:
+            return jsonify({'error': 'Unauthorized'}), 401
+        return f(*args, **kwargs)
+    return wrapper
 
 # Get all education records
 @app.route('/education', methods=['GET'])
@@ -39,6 +63,7 @@ def get_education_item(edu_id):
 
 # Create new education record
 @app.route('/education', methods=['POST'])
+@require_auth
 def create_education():
     try:
         data = request.get_json()
@@ -59,6 +84,7 @@ def create_education():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/education/<int:edu_id>', methods=['PUT'])
+@require_auth
 def update_education(edu_id):
     try:
         data = request.get_json()
@@ -79,6 +105,7 @@ def update_education(edu_id):
         return jsonify({'error': str(e)}), 500
 
 @app.route('/education/<int:edu_id>', methods=['DELETE'])
+@require_auth
 def delete_education(edu_id):
     try:
         response = supabase.table('education').delete().eq('id', edu_id).execute()

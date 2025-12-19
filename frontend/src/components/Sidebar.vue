@@ -17,7 +17,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
-import { isAuthenticated, clearAuth } from '../lib/auth.js'
+import { isAuthenticated, logout as doLogout } from '../lib/auth.js'
 
 const router = useRouter()
 const isAuthed = computed(() => isAuthenticated())
@@ -25,8 +25,8 @@ const isAuthed = computed(() => isAuthenticated())
 function goLogin(){
   router.push('/login')
 }
-function logout(){
-  clearAuth()
+async function logout(){
+  await doLogout()
   router.push('/login')
 }
 </script>
