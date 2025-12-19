@@ -21,7 +21,7 @@ supabase: Client = create_client(
 @app.route('/work', methods=['GET'])
 def get_work():
     try:
-        response = supabase.schema('public').table('work_experience').select('*').order('start_date', desc=True).execute()
+        response = supabase.table('work_experience').select('*').order('start_date', desc=True).execute()
         return jsonify({'data': response.data, 'count': len(response.data)}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -30,7 +30,7 @@ def get_work():
 @app.route('/work/<int:work_id>', methods=['GET'])
 def get_work_item(work_id):
     try:
-        response = supabase.schema('public').table('work_experience').select('*').eq('id', work_id).execute()
+        response = supabase.table('work_experience').select('*').eq('id', work_id).execute()
         if response.data:
             return jsonify(response.data[0]), 200
         return jsonify({'error': 'Work record not found'}), 404
@@ -54,7 +54,7 @@ def create_work():
             'description': data.get('description')
         }
 
-        response = supabase.schema('public').table('work_experience').insert(new_item).execute()
+        response = supabase.table('work_experience').insert(new_item).execute()
         return jsonify({'data': response.data, 'message': 'Work record created'}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -73,7 +73,7 @@ def update_work(work_id):
         if not update_data:
             return jsonify({'error': 'No fields to update'}), 400
 
-        response = supabase.schema('public').table('work_experience').update(update_data).eq('id', work_id).execute()
+        response = supabase.table('work_experience').update(update_data).eq('id', work_id).execute()
         if response.data:
             return jsonify({'data': response.data, 'message': 'Work record updated'}), 200
         return jsonify({'error': 'Work record not found'}), 404
@@ -84,7 +84,7 @@ def update_work(work_id):
 @app.route('/work/<int:work_id>', methods=['DELETE'])
 def delete_work(work_id):
     try:
-        response = supabase.schema('public').table('work_experience').delete().eq('id', work_id).execute()
+        response = supabase.table('work_experience').delete().eq('id', work_id).execute()
         if response.data:
             return jsonify({'message': 'Work record deleted'}), 200
         return jsonify({'error': 'Work record not found'}), 404
@@ -92,4 +92,4 @@ def delete_work(work_id):
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5002)
+    app.run(debug=True, host='0.0.0.0', port=5002)

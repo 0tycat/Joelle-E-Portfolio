@@ -21,7 +21,7 @@ supabase: Client = create_client(
 @app.route('/community', methods=['GET'])
 def get_community():
     try:
-        response = supabase.schema('public').table('community_service').select('*').execute()
+        response = supabase.table('community_service').select('*').execute()
         return jsonify({'data': response.data, 'count': len(response.data)}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -30,7 +30,7 @@ def get_community():
 @app.route('/community/<int:item_id>', methods=['GET'])
 def get_community_item(item_id):
     try:
-        response = supabase.schema('public').table('community_service').select('*').eq('id', item_id).execute()
+        response = supabase.table('community_service').select('*').eq('id', item_id).execute()
         if response.data:
             return jsonify(response.data[0]), 200
         return jsonify({'error': 'Community service record not found'}), 404
@@ -52,7 +52,7 @@ def create_community():
             'description': data.get('description')
         }
 
-        response = supabase.schema('public').table('community_service').insert(new_item).execute()
+        response = supabase.table('community_service').insert(new_item).execute()
         return jsonify({'data': response.data, 'message': 'Community service record created'}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -68,7 +68,7 @@ def update_community(item_id):
                 update_data[key] = data[key]
         if not update_data:
             return jsonify({'error': 'No fields to update'}), 400
-        response = supabase.schema('public').table('community_service').update(update_data).eq('id', item_id).execute()
+        response = supabase.table('community_service').update(update_data).eq('id', item_id).execute()
         if response.data:
             return jsonify({'data': response.data, 'message': 'Community service record updated'}), 200
         return jsonify({'error': 'Community service record not found'}), 404
@@ -79,7 +79,7 @@ def update_community(item_id):
 @app.route('/community/<int:item_id>', methods=['DELETE'])
 def delete_community(item_id):
     try:
-        response = supabase.schema('public').table('community_service').delete().eq('id', item_id).execute()
+        response = supabase.table('community_service').delete().eq('id', item_id).execute()
         if response.data:
             return jsonify({'message': 'Community service record deleted'}), 200
         return jsonify({'error': 'Community service record not found'}), 404
@@ -87,4 +87,4 @@ def delete_community(item_id):
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5003)
+    app.run(debug=True, host='0.0.0.0', port=5003)
