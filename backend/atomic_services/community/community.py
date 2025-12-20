@@ -96,7 +96,11 @@ def update_community(item_id):
         update_data = {}
         for key in ['programme_name', 'role', 'description', 'start_date', 'end_date']:
             if key in data:
-                update_data[key] = data[key]
+                # Convert empty strings to None for date fields
+                if key in ['start_date', 'end_date']:
+                    update_data[key] = data[key] if data[key] != '' else None
+                else:
+                    update_data[key] = data[key]
         if not update_data:
             return jsonify({'error': 'No fields to update'}), 400
         response = supabase.table('community_service').update(update_data).eq('id', item_id).execute()
