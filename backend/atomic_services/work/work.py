@@ -94,7 +94,11 @@ def update_work(work_id):
         update_data = {}
         for key in ['company_name', 'role', 'start_date', 'end_date', 'description']:
             if key in data:
-                update_data[key] = data[key]
+                # Convert empty strings to None for date fields
+                if key in ['start_date', 'end_date']:
+                    update_data[key] = data[key] if data[key] != '' else None
+                else:
+                    update_data[key] = data[key]
 
         if not update_data:
             return jsonify({'error': 'No fields to update'}), 400
