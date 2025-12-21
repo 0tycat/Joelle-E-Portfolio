@@ -1,12 +1,35 @@
 <template>
   <section>
     <h2>Other Information / Projects</h2>
-    <div v-if="isAuthed" style="margin-bottom:12px">
-      <button class="btn" @click="showAdd=true"><i class="fas fa-plus"></i> Add Project</button>
+    <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:12px">
+      <div v-if="isAuthed">
+        <button class="btn" @click="showAdd=true"><i class="fas fa-plus"></i> Add Project</button>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center">
+        <div style="position:relative">
+          <button class="btn secondary" @click="toggleFilter"><i class="fas fa-filter"></i> Filter</button>
+          <div v-if="filterOpen" class="card" style="position:absolute; top:110%; left:0; min-width:240px; z-index:10; padding:10px; display:flex; flex-direction:column; gap:8px">
+            <strong>Projects</strong>
+            <small style="color:#6b7280">Checked projects are hidden</small>
+            <label v-for="name in projectOptions" :key="name" style="display:flex; align-items:center; gap:6px">
+              <input type="checkbox" v-model="activeProjects" :value="name" />
+              <span>{{ name }}</span>
+            </label>
+            <button class="btn secondary" style="padding:6px 10px; align-self:flex-start" @click="clearFilters"><i class="fas fa-undo"></i> Clear</button>
+          </div>
+        </div>
+        <div style="position:relative">
+          <button class="btn secondary" @click="toggleSort"><i class="fas fa-sort"></i> Sort: {{ sortLabel }}</button>
+          <div v-if="sortOpen" class="card" style="position:absolute; top:110%; left:0; min-width:200px; z-index:10; padding:10px; display:flex; flex-direction:column; gap:6px">
+            <button class="btn secondary" :class="{active: sortMode==='alpha-asc'}" @click="setSortAndClose('alpha-asc')">Name A to Z</button>
+            <button class="btn secondary" :class="{active: sortMode==='alpha-desc'}" @click="setSortAndClose('alpha-desc')">Name Z to A</button>
+          </div>
+        </div>
+      </div>
     </div>
     <div v-if="loading">Loading...</div>
     <div v-else>
-      <div v-for="p in projects" :key="p.id" class="card">
+      <div v-for="p in filteredAndSorted" :key="p.id" class="card">
         <strong>{{ p.project_name }}</strong>
         <p style="white-space:pre-wrap">{{ p.description }}</p>
         <div v-if="isAuthed" style="margin-top:8px; display:flex; gap:8px">
@@ -73,6 +96,35 @@ const showConfirm = ref(false)
 let deleteTargetId = null
 const deleteItemLabel = ref('')
 const confirmMessage = computed(() => `Delete "${deleteItemLabel.value}"? This cannot be undone.`)
+const filterOpen = ref(false)
+const sortOpen = ref(false)
+const activeProjects = ref([])
+const sortMode = ref('alpha-asc')
+const projectOptions = computed(() => {
+  const names = projects.value.map(p => p.project_name).filter(Boolean)
+  return [...new Set(names)].sort((a, b) => a.localeCompare(b))
+})
+const sortLabel = computed(() => {
+  switch (sortMode.value) {
+    case 'alpha-desc':
+      return 'Name Z to A'
+    case 'alpha-asc':
+    default:
+      return 'Name A to Z'
+  }
+})
+const filteredAndSorted = computed(() => {
+  let list = projects.value
+  if (activeProjects.value.length) {
+    list = list.filter(p => !activeProjects.value.includes(p.project_name))
+  }
+  return [...list].sort((a, b) => {
+    const nameA = a.project_name || ''
+    const nameB = b.project_name || ''
+    if (sortMode.value === 'alpha-desc') return nameB.localeCompare(nameA)
+    return nameA.localeCompare(nameB)
+  })
+})
 
 async function refresh(){
   try{
@@ -130,6 +182,22 @@ async function performDelete(){
     closeConfirm()
     await refresh()
   }catch(err){ error.value = 'Delete failed' }
+}
+
+function toggleFilter(){
+  filterOpen.value = !filterOpen.value
+  if (filterOpen.value) sortOpen.value = false
+}
+function toggleSort(){
+  sortOpen.value = !sortOpen.value
+  if (sortOpen.value) filterOpen.value = false
+}
+function clearFilters(){
+  activeProjects.value = []
+}
+function setSortAndClose(mode){
+  sortMode.value = mode
+  sortOpen.value = false
 }
 
 function handleDescriptionKeydown(event, item){

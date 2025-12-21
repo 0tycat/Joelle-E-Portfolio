@@ -1,12 +1,39 @@
 <template>
   <section>
     <h2>Community Service</h2>
-    <div v-if="isAuthed" style="margin-bottom:12px">
-      <button class="btn" @click="showAdd=true"><i class="fas fa-plus"></i> Add Community Service</button>
+    <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:12px">
+      <div v-if="isAuthed">
+        <button class="btn" @click="showAdd=true"><i class="fas fa-plus"></i> Add Community Service</button>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center">
+        <div style="position:relative">
+          <button class="btn secondary" @click="toggleFilter"><i class="fas fa-filter"></i> Filter</button>
+          <div v-if="filterOpen" class="card" style="position:absolute; top:110%; left:0; min-width:240px; z-index:10; padding:10px; display:flex; flex-direction:column; gap:8px">
+            <strong>Roles</strong>
+            <small style="color:#6b7280">Checked roles are hidden</small>
+            <label v-for="role in roleOptions" :key="role" style="display:flex; align-items:center; gap:6px">
+              <input type="checkbox" v-model="activeRoles" :value="role" />
+              <span>{{ role }}</span>
+            </label>
+            <button class="btn secondary" style="padding:6px 10px; align-self:flex-start" @click="clearFilters"><i class="fas fa-undo"></i> Clear</button>
+          </div>
+        </div>
+        <div style="position:relative">
+          <button class="btn secondary" @click="toggleSort"><i class="fas fa-sort"></i> Sort: {{ sortLabel }}</button>
+          <div v-if="sortOpen" class="card" style="position:absolute; top:110%; left:0; min-width:200px; z-index:10; padding:10px; display:flex; flex-direction:column; gap:6px">
+            <button class="btn secondary" :class="{active: sortMode==='alpha-asc'}" @click="setSortAndClose('alpha-asc')">Name A → Z</button>
+            <button class="btn secondary" :class="{active: sortMode==='alpha-desc'}" @click="setSortAndClose('alpha-desc')">Name Z → A</button>
+            <button class="btn secondary" :class="{active: sortMode==='start-new'}" @click="setSortAndClose('start-new')">Start: Newest</button>
+            <button class="btn secondary" :class="{active: sortMode==='start-old'}" @click="setSortAndClose('start-old')">Start: Oldest</button>
+            <button class="btn secondary" :class="{active: sortMode==='end-new'}" @click="setSortAndClose('end-new')">End: Newest</button>
+            <button class="btn secondary" :class="{active: sortMode==='end-old'}" @click="setSortAndClose('end-old')">End: Oldest</button>
+          </div>
+        </div>
+      </div>
     </div>
     <div v-if="loading">Loading...</div>
     <div v-else>
-      <div v-for="c in community" :key="c.id" class="card">
+      <div v-for="c in filteredAndSorted" :key="c.id" class="card">
         <strong>{{ c.programme_name }}</strong>
         <div>Role: {{ c.role }}</div>
         <div v-if="c.start_date || c.end_date" style="margin:4px 0">{{ formatDate(c.start_date) }} - {{ c.end_date ? formatDate(c.end_date) : 'Present' }}</div>
@@ -78,6 +105,10 @@ const community = ref([])
 const loading = ref(true)
 const error = ref('')
 const isAuthed = authIsAuthed
+const activeRoles = ref([])
+const filterOpen = ref(false)
+const sortOpen = ref(false)
+const sortMode = ref('start-new')
 const newItem = ref({ programme_name:'', role:'', start_date:'', end_date:'', description:'' })
 const editItem = ref({ programme_name:'', role:'', start_date:'', end_date:'', description:'' })
 const showAdd = ref(false)
@@ -96,6 +127,54 @@ async function refresh(){
   }
 }
 onMounted(refresh)
+
+const roleOptions = computed(() => {
+  const roles = new Set(community.value.map(c => c.role).filter(Boolean))
+  return Array.from(roles).sort((a,b) => a.localeCompare(b))
+})
+
+const filteredAndSorted = computed(() => {
+  const filtered = activeRoles.value.length
+    ? community.value.filter(c => !activeRoles.value.includes(c.role))
+    : community.value
+
+  const toDate = v => v ? new Date(v) : null
+
+  return [...filtered].sort((a,b) => {
+    if(sortMode.value === 'alpha-asc') return a.programme_name.localeCompare(b.programme_name)
+    if(sortMode.value === 'alpha-desc') return b.programme_name.localeCompare(a.programme_name)
+    if(sortMode.value === 'start-new') return (toDate(b.start_date) - toDate(a.start_date))
+    if(sortMode.value === 'start-old') return (toDate(a.start_date) - toDate(b.start_date))
+    if(sortMode.value === 'end-new') return (toDate(b.end_date) || 0) - (toDate(a.end_date) || 0)
+    if(sortMode.value === 'end-old') return (toDate(a.end_date) || 0) - (toDate(b.end_date) || 0)
+    return 0
+  })
+})
+
+function setSortAndClose(mode){
+  sortMode.value = mode
+  sortOpen.value = false
+}
+function clearFilters(){
+  activeRoles.value = []
+}
+function toggleFilter(){
+  filterOpen.value = !filterOpen.value
+  if(filterOpen.value) sortOpen.value = false
+}
+function toggleSort(){
+  sortOpen.value = !sortOpen.value
+  if(sortOpen.value) filterOpen.value = false
+}
+const sortLabel = computed(() => {
+  if(sortMode.value === 'alpha-asc') return 'Name A → Z'
+  if(sortMode.value === 'alpha-desc') return 'Name Z → A'
+  if(sortMode.value === 'start-new') return 'Start: Newest'
+  if(sortMode.value === 'start-old') return 'Start: Oldest'
+  if(sortMode.value === 'end-new') return 'End: Newest'
+  if(sortMode.value === 'end-old') return 'End: Oldest'
+  return 'Choose'
+})
 
 async function addCommunity(){
   error.value = ''
