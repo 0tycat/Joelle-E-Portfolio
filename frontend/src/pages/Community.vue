@@ -38,9 +38,9 @@
         <div>Role: {{ c.role }}</div>
         <div v-if="c.start_date || c.end_date" style="margin:4px 0">{{ formatDate(c.start_date) }} - {{ c.end_date ? formatDate(c.end_date) : 'Present' }}</div>
         <p style="white-space:pre-wrap">{{ c.description }}</p>
-        <div v-if="isAuthed" style="margin-top:8px; display:flex; gap:8px">
-          <button class="btn secondary" @click="startEdit(c)"><i class="fas fa-edit"></i> Edit</button>
-          <button class="btn danger" @click="askRemoveCommunity(c)"><i class="fas fa-trash"></i> Delete</button>
+        <div v-if="isAuthed" class="card-actions">
+          <button class="btn-icon secondary" @click="startEdit(c)" title="Edit"><i class="fas fa-edit"></i></button>
+          <button class="btn-icon danger" @click="askRemoveCommunity(c)" title="Delete"><i class="fas fa-trash"></i></button>
         </div>
       </div>
     </div>
