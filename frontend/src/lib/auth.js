@@ -22,6 +22,71 @@ export function clearAuth(){
   localStorage.removeItem('refresh_token')
 }
 
+// Validate token with auth server
+export async function validateToken(token){
+  if(!token) return false
+  try{
+    const res = await fetch(`${AUTH_URL}/auth/validate`,{
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization': `Bearer ${token}` }
+    })
+    return res.ok
+  }catch(err){
+    console.warn('Token validation error:', err)
+    return false
+  }
+}
+
+// Try to refresh token if available
+export async function tryRefreshToken(){
+  const refreshToken = localStorage.getItem('refresh_token')
+  if(!refreshToken) return false
+  try{
+    const res = await fetch(`${AUTH_URL}/auth/refresh`,{
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken })
+    })
+    if(!res.ok) return false
+    const data = await res.json()
+    if(data.access_token){
+      setAccessToken(data.access_token)
+      if(data.refresh_token){
+        localStorage.setItem('refresh_token', data.refresh_token)
+      }
+      return true
+    }
+    return false
+  }catch(err){
+    console.warn('Token refresh error:', err)
+    return false
+  }
+}
+
+// Initialize auth on app startup - checks token validity
+export async function initializeAuth(){
+  const token = authToken.value
+  if(!token){
+    return false
+  }
+  
+  // Try to validate the current token
+  const isValid = await validateToken(token)
+  if(isValid){
+    return true
+  }
+  
+  // If invalid, try to refresh it
+  const refreshed = await tryRefreshToken()
+  if(refreshed){
+    return true
+  }
+  
+  // If all else fails, clear auth
+  clearAuth()
+  return false
+}
+
 export async function logout(){
   const token = authToken.value
   try{
