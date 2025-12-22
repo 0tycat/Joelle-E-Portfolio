@@ -102,6 +102,35 @@ def get_user():
     except Exception as e:
         return jsonify({'error': str(e)}), 401
 
+# Validate access token
+@app.route('/auth/validate', methods=['POST'])
+def validate_token():
+    """Validate if access token is valid"""
+    try:
+        auth_header = request.headers.get('Authorization')
+        
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({'error': 'No valid authorization header'}), 401
+        
+        token = auth_header.split(' ')[1]
+        
+        # Try to get user from token - will raise if token is invalid
+        user = supabase.auth.get_user(token)
+        
+        if not getattr(user, 'user', None):
+            return jsonify({'error': 'Invalid token'}), 401
+        
+        return jsonify({
+            'valid': True,
+            'user': {
+                'id': user.user.id,
+                'email': user.user.email
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 401
+
 @app.route('/auth/refresh', methods=['POST'])
 def refresh_token():
     """Refresh access token"""
