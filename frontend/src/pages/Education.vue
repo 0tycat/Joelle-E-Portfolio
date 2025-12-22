@@ -36,7 +36,7 @@
       <div v-for="e in filteredAndSorted" :key="e.id" class="card">
         <strong>{{ e.institute_name }}</strong>
         <div>{{ e.certification }}</div>
-        <div>{{ formatDate(e.start_date) }} - {{ formatDate(e.finish_date) }}</div>
+        <div>{{ formatDate(e.start_date) }} - {{ e.finish_date ? formatDate(e.finish_date) : 'Present' }}</div>
         <div v-if="isAuthed" style="margin-top:8px; display:flex; gap:8px">
           <button class="btn secondary" @click="startEdit(e)"><i class="fas fa-edit"></i> Edit</button>
           <button class="btn danger" @click="askRemoveEducation(e)"><i class="fas fa-trash"></i> Delete</button>
