@@ -4,6 +4,7 @@ from supabase import create_client, Client
 from functools import wraps
 from dotenv import load_dotenv
 import os
+import sys
 
 # Load environment variables
 load_dotenv()
@@ -67,6 +68,7 @@ def get_work_item(work_id):
 def create_work():
     try:
         data = request.get_json()
+        print(f"POST /work received data: {data}", flush=True)
 
         if not data.get('company_name') or not data.get('role') or not data.get('start_date'):
             return jsonify({'error': 'company_name, role, start_date are required'}), 400
@@ -75,13 +77,17 @@ def create_work():
             'company_name': data.get('company_name'),
             'role': data.get('role'),
             'start_date': data.get('start_date'),
-            'end_date': data.get('end_date'),
+            'end_date': data.get('end_date') or None,  # Convert empty string to None
             'description': data.get('description')
         }
 
         response = supabase.table('work_experience').insert(new_item).execute()
         return jsonify({'data': response.data, 'message': 'Work record created'}), 201
     except Exception as e:
+        error_msg = f"Error in create_work: {str(e)}"
+        print(error_msg, file=sys.stderr, flush=True)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
         return jsonify({'error': str(e)}), 500
 
 # Update work experience record
