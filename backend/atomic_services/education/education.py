@@ -75,7 +75,7 @@ def create_education():
             'institute_name': data.get('institute_name'),
             'certification': data.get('certification'),
             'start_date': data.get('start_date'),
-            'finish_date': data.get('finish_date')
+            'finish_date': data.get('finish_date') or None  # Convert empty string to None
         }
 
         response = supabase.table('education').insert(new_item).execute()
