@@ -38,9 +38,9 @@
         <div>{{ w.role }}</div>
         <div>{{ formatDate(w.start_date) }} - {{ w.end_date ? formatDate(w.end_date) : 'Present' }}</div>
         <p style="white-space:pre-wrap">{{ w.description }}</p>
-        <div v-if="isAuthed" style="margin-top:8px; display:flex; gap:8px">
-          <button class="btn secondary" @click="startEdit(w)"><i class="fas fa-edit"></i> Edit</button>
-          <button class="btn danger" @click="askRemoveWork(w)"><i class="fas fa-trash"></i> Delete</button>
+        <div v-if="isAuthed" class="card-actions">
+          <button class="btn-icon secondary" @click="startEdit(w)" title="Edit"><i class="fas fa-edit"></i></button>
+          <button class="btn-icon danger" @click="askRemoveWork(w)" title="Delete"><i class="fas fa-trash"></i></button>
         </div>
       </div>
     </div>
