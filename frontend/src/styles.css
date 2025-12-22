@@ -23,8 +23,15 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue"
 .nav a{display:block;color:var(--text-secondary);padding:8px 10px;border-radius:6px;text-decoration:none;margin:4px 0}
 .nav a.router-link-active{background:var(--border-color);color:var(--text-primary)}
 .content{flex:1;padding:20px;overflow:auto;height:100%}
-.btn{background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:8px 12px;cursor:pointer}
-.btn.secondary{background:#ef4444}
+.btn{background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:8px 12px;cursor:pointer;background:var(--btn-primary);transition:all 0.2s ease;box-shadow:0 2px 4px rgba(0,0,0,0.1)}
+.btn:hover{background:var(--btn-primary-hover);transform:translateY(-1px);box-shadow:0 4px 8px rgba(0,0,0,0.15)}
+.btn:active{transform:translateY(0);box-shadow:0 1px 2px rgba(0,0,0,0.1)}
+.btn.secondary{background:var(--btn-secondary);color:#fff}
+.btn.secondary:hover{background:var(--btn-secondary-hover)}
+.btn.danger{background:var(--btn-danger);color:#fff}
+.btn.danger:hover{background:var(--btn-danger-hover)}
+.btn.success{background:var(--btn-success);color:#fff}
+.btn.success:hover{background:var(--btn-success-hover)}
 .input{width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary)}
 .card{background:var(--bg-tertiary);border:1px solid var(--border-color);padding:12px;border-radius:10px;margin-bottom:12px}
 
