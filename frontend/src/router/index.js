@@ -7,12 +7,13 @@ import Community from '../pages/Community.vue'
 import Login from '../pages/Login.vue'
 
 const routes = [
-  { path: '/', redirect: '/skills' },
+  { path: '/', redirect: '/portfolio' },
+  { path: '/portfolio', component: Projects },
+  { path: '/education', component: Education },
   { path: '/skills', component: Skills },
   { path: '/experience', component: Work },
-  { path: '/education', component: Education },
   { path: '/community', component: Community },
-  { path: '/other-information', component: Projects },
+  { path: '/interests', component: Projects },
   { path: '/login', component: Login }
 ]
 
