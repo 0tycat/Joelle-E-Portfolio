@@ -111,6 +111,22 @@ services:
     networks:
       - portfolio-network
 
+  e-portfolio-service:
+    build:
+      context: ..
+      dockerfile: backend/atomic_services/e_portfolio/Dockerfile
+    image: joelle-e-portfolio:latest
+    container_name: joelle-e-portfolio
+    ports:
+      - "5006:5006"
+    env_file:
+      - ./.env
+    volumes:
+      - ./atomic_services/e_portfolio:/app/backend/atomic_services/e_portfolio
+    restart: unless-stopped
+    networks:
+      - portfolio-network
+
 networks:
   portfolio-network:
     driver: bridge
