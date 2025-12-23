@@ -3,12 +3,9 @@ services:
     name: joelle-e-portfolio-backend
     runtime: docker
     plan: free
-    dockerfilePath: backend/composite_services/Dockerfile
-    dockerContext: backend
     env: docker
-    # Environment variables must be set in Render Dashboard
-    # Go to: Settings → Environment
-    # Required variables:
+    dockerfilePath: backend/composite_services/Dockerfile
+    # Set secrets in Render Dashboard → Environment:
     #   SUPABASE_URL
     #   SUPABASE_SERVICE_KEY
     #   SUPABASE_ANON_KEY
