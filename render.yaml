@@ -3,14 +3,12 @@ services:
     name: joelle-e-portfolio
     runtime: docker
     plan: free
-    build:
-      context: ./backend
-      dockerfile: docker-compose.yml
+    dockerfilePath: backend/docker-compose.yml
+    rootDir: backend
     envVars:
       - key: SUPABASE_URL
         value: https://bedzvtmzhrwujiaukjvl.supabase.co
       - key: SUPABASE_SERVICE_KEY
-        sync: false
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJlZHp2dG16aHJ3dWppYXVranZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyNjkzNDAsImV4cCI6MjA4MDg0NTM0MH0.3heykJxByfCSpvJkXgOw3m503IkvYm7pxDsQ4-hSAJ8
       - key: SUPABASE_ANON_KEY
-        sync: false
-    startCommand: docker compose up
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJlZHp2dG16aHJ3dWppYXVranZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyNjkzNDAsImV4cCI6MjA4MDg0NTM0MH0.3heykJxByfCSpvJkXgOw3m503IkvYm7pxDsQ4-hSAJ8
