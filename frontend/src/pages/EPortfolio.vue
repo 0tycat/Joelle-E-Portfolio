@@ -10,13 +10,16 @@
 
     <div v-if="loading">Loading...</div>
     <div v-else>
-      <div v-if="items.length===0" class="card">No activities yet.</div>
-      <div v-for="item in items" :key="item.id" class="card">
-        <strong>{{ item.activity_name }}</strong>
-        <p style="white-space:pre-wrap">{{ item.description }}</p>
-        <div v-if="isAuthed" class="card-actions">
-          <button class="btn-icon secondary" @click="startEdit(item)" title="Edit"><i class="fas fa-edit"></i></button>
-          <button class="btn-icon danger" @click="askRemove(item)" title="Delete"><i class="fas fa-trash"></i></button>
+      <p v-if="error" style="color:#fca5a5">{{ error }}</p>
+      <div v-else>
+        <div v-if="items.length===0" class="card">No activities yet.</div>
+        <div v-for="item in items" :key="item.id" class="card">
+          <strong>{{ item.activity_name }}</strong>
+          <p style="white-space:pre-wrap">{{ item.description }}</p>
+          <div v-if="isAuthed" class="card-actions">
+            <button class="btn-icon secondary" @click="startEdit(item)" title="Edit"><i class="fas fa-edit"></i></button>
+            <button class="btn-icon danger" @click="askRemove(item)" title="Delete"><i class="fas fa-trash"></i></button>
+          </div>
         </div>
       </div>
     </div>
@@ -81,7 +84,11 @@ const confirmMessage = computed(() => `Delete "${deleteItemLabel.value}"? This c
 
 async function refresh(){
   try{
+    error.value = ''
     items.value = await apiGet('/api/e-portfolio')
+  } catch (e) {
+    console.error('Failed to load e-portfolio:', e)
+    error.value = 'Failed to load E-Portfolio. Please check the API service.'
   } finally {
     loading.value = false
   }
