@@ -5,6 +5,7 @@ const EDUCATION_URL = import.meta.env.VITE_EDU_URL || 'http://127.0.0.1:5001'
 const WORK_URL = import.meta.env.VITE_WORK_URL || 'http://127.0.0.1:5002'
 const COMMUNITY_URL = import.meta.env.VITE_COMM_URL || 'http://127.0.0.1:5003'
 const PROJECTS_URL = import.meta.env.VITE_PROJ_URL || 'http://127.0.0.1:5004'
+const EPORTFOLIO_URL = import.meta.env.VITE_EPORT_URL || 'http://127.0.0.1:5006'
 
 function authHeader(){
   const token = localStorage.getItem('access_token')
@@ -154,4 +155,25 @@ export async function deleteCommunity(id){
 // Proficiency Levels (read via composite service)
 export async function getProfLevels(){
   return apiGet('/api/prof-levels')
+}
+
+// E-Portfolio write API
+export async function postEPortfolio(payload){
+  const res = await fetch(`${EPORTFOLIO_URL}/e_portfolio`,{
+    method:'POST', headers:{ 'Content-Type':'application/json', ...authHeader() }, body: JSON.stringify(payload)
+  })
+  if(!res.ok) throw new Error('Request failed')
+  return await res.json()
+}
+export async function putEPortfolio(id, payload){
+  const res = await fetch(`${EPORTFOLIO_URL}/e_portfolio/${id}`,{
+    method:'PUT', headers:{ 'Content-Type':'application/json', ...authHeader() }, body: JSON.stringify(payload)
+  })
+  if(!res.ok) throw new Error('Request failed')
+  return await res.json()
+}
+export async function deleteEPortfolio(id){
+  const res = await fetch(`${EPORTFOLIO_URL}/e_portfolio/${id}`,{ method:'DELETE', headers:{ ...authHeader() } })
+  if(!res.ok) throw new Error('Request failed')
+  return await res.json()
 }
