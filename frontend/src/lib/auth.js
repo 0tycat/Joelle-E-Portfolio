@@ -1,6 +1,10 @@
 import { ref, computed } from 'vue'
 
-const AUTH_URL = import.meta.env.VITE_AUTH_URL || 'http://127.0.0.1:5005'
+// Prefer explicit VITE_AUTH_URL; otherwise fall back to the composite API base.
+const AUTH_URL =
+  import.meta.env.VITE_AUTH_URL ||
+  import.meta.env.VITE_API_URL ||
+  'http://127.0.0.1:8000'
 
 // Reactive auth token state shared across app
 export const authToken = ref(localStorage.getItem('access_token'))
