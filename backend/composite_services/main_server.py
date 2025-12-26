@@ -634,10 +634,8 @@ def upload_e_portfolio_file(item_id):
                 path = f"{item_id}/{uploaded.filename or 'evidence'}"
                 mime = uploaded.mimetype or 'application/octet-stream'
 
-                # Upload to storage bucket as fallback (use BytesIO to satisfy SDK expectations)
-                buffer = io.BytesIO(content)
-                buffer.seek(0)
-                supabase.storage.from_(bucket_name).upload(path, buffer, {
+                # Upload to storage bucket as fallback (pass raw bytes)
+                supabase.storage.from_(bucket_name).upload(path, content, {
                     'content-type': mime,
                     'upsert': True
                 })
