@@ -1,6 +1,7 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from supabase import create_client, Client
+from functools import wraps
 from dotenv import load_dotenv
 import os
 
@@ -9,13 +10,101 @@ load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app, resources={r"/api/*": {"origins": "*", "methods": ["GET", "POST", "OPTIONS"], "allow_headers": ["Content-Type", "Authorization"]}})
 
 # Initialize Supabase client
 supabase: Client = create_client(
     os.getenv("SUPABASE_URL"),
     os.getenv("SUPABASE_SERVICE_KEY")
 )
+
+# Initialize Supabase client with ANON key for auth operations
+supabase_anon: Client = create_client(
+    os.getenv("SUPABASE_URL"),
+    os.getenv("SUPABASE_ANON_KEY")
+)
+
+# Authentication helper decorator
+def require_auth(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({'error': 'Missing or invalid authorization header'}), 401
+        token = auth_header.split(' ')[1]
+        try:
+            user = supabase_anon.auth.get_user(token)
+            return f(*args, **kwargs)
+        except Exception as e:
+            return jsonify({'error': 'Invalid token'}), 401
+    return decorated_function
+
+# Auth Login endpoint
+@app.route('/api/auth/login', methods=['POST', 'OPTIONS'])
+def login():
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        password = data.get('password')
+        if not email or not password:
+            return jsonify({'error': 'Email and password required'}), 400
+        response = supabase_anon.auth.sign_in_with_password({"email": email, "password": password})
+        return jsonify({
+            'user': response.user.model_dump(),
+            'session': {
+                'access_token': response.session.access_token,
+                'refresh_token': response.session.refresh_token
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 401
+
+# Auth Logout endpoint
+@app.route('/api/auth/logout', methods=['POST', 'OPTIONS'])
+@require_auth
+def logout():
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        supabase_anon.auth.sign_out()
+        return jsonify({'message': 'Logged out successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Auth Validate endpoint
+@app.route('/api/auth/validate', methods=['POST', 'OPTIONS'])
+def validate_token():
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        data = request.get_json()
+        token = data.get('token')
+        if not token:
+            return jsonify({'error': 'Token required'}), 400
+        user = supabase_anon.auth.get_user(token)
+        return jsonify({'valid': True, 'user': user.model_dump()}), 200
+    except Exception as e:
+        return jsonify({'error': 'Invalid token'}), 401
+
+# Auth Refresh endpoint
+@app.route('/api/auth/refresh', methods=['POST', 'OPTIONS'])
+def refresh_token():
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        data = request.get_json()
+        refresh_token = data.get('refresh_token')
+        if not refresh_token:
+            return jsonify({'error': 'Refresh token required'}), 400
+        response = supabase_anon.auth.refresh_session(refresh_token)
+        return jsonify({
+            'access_token': response.session.access_token,
+            'refresh_token': response.session.refresh_token
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 401
 
 # Skills endpoint with proficiency labels resolved from prof_level table
 @app.route('/api/skills', methods=['GET'])
