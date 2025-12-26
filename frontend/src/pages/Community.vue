@@ -222,7 +222,11 @@ async function performDelete(){
 }
 
 function handleDescriptionKeydown(event, item){
-  if(event.key === 'Enter' && !event.shiftKey){
+  if(event.key === 'Enter'){
+    // Allow Shift+Enter to insert a plain newline without bullet
+    if(event.shiftKey){
+      return
+    }
     event.preventDefault()
     const textarea = event.target
     const cursorPos = textarea.selectionStart

@@ -269,7 +269,11 @@ function onEditFileCleared(){ editFile.value = null }
 // Upload occurs as part of Save in add/edit flows
 
 function insertBulletOnEnter(event){
-  if(event.key === 'Enter' && !event.shiftKey){
+  if(event.key === 'Enter'){
+    if(event.shiftKey){
+      // Allow Shift+Enter to insert a plain newline without bullet
+      return
+    }
     event.preventDefault()
     const textarea = event.target
     const start = textarea.selectionStart
