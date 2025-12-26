@@ -4,6 +4,7 @@ from supabase import create_client, Client
 from functools import wraps
 from dotenv import load_dotenv
 import os
+import io
 
 # Load environment variables
 load_dotenv()
@@ -595,7 +596,7 @@ def upload_e_portfolio_file(item_id):
         uploaded = request.files.get('file') if request.files else None
 
         if clear_flag and clear_flag.lower() == 'true':
-            response = supabase.table('e_portfolio').update({'artefacts_evidence_files': None}).eq('id', item_id).execute()
+            response = supabase.table('e_portfolio').update({'artefacts_evidence_files': None, 'artefacts_evidence_links_texts': None}).eq('id', item_id).execute()
             if response.data:
                 return jsonify({'message': 'File cleared'}), 200
             return jsonify({'error': 'E-portfolio activity not found'}), 404
@@ -608,10 +609,44 @@ def upload_e_portfolio_file(item_id):
             return jsonify({'error': 'File too large (max 10 MB)'}), 413
         hex_value = '\\x' + content.hex()
 
-        response = supabase.table('e_portfolio').update({'artefacts_evidence_files': hex_value}).eq('id', item_id).execute()
-        if response.data:
-            return jsonify({'message': 'File uploaded', 'size_bytes': len(content)}), 200
-        return jsonify({'error': 'E-portfolio activity not found'}), 404
+        try:
+            response = supabase.table('e_portfolio').update({'artefacts_evidence_files': hex_value}).eq('id', item_id).execute()
+            if response.data:
+                return jsonify({'message': 'File uploaded', 'size_bytes': len(content)}), 200
+            return jsonify({'error': 'E-portfolio activity not found'}), 404
+        except Exception as update_err:
+            # Fallback path for PostgREST schema cache miss (PGRST204)
+            err_msg = str(update_err)
+            if 'PGRST204' not in err_msg and 'schema cache' not in err_msg:
+                return jsonify({'error': f'Upload failed: {err_msg}'}), 500
+
+            try:
+                bucket_name = 'eportfolio-evidence'
+                # Ensure bucket exists (ignore if already present)
+                try:
+                    supabase.storage.get_bucket(bucket_name)
+                except Exception:
+                    try:
+                        supabase.storage.create_bucket(bucket_name, {'public': True})
+                    except Exception:
+                        pass
+
+                path = f"{item_id}/{uploaded.filename or 'evidence'}"
+                mime = uploaded.mimetype or 'application/octet-stream'
+                # Upload to storage bucket as fallback
+                supabase.storage.from_(bucket_name).upload(path, content, {
+                    'content-type': mime,
+                    'upsert': True
+                })
+                public_url = supabase.storage.from_(bucket_name).get_public_url(path)
+
+                # Store the URL in links column as a fallback
+                link_update = supabase.table('e_portfolio').update({'artefacts_evidence_links_texts': public_url}).eq('id', item_id).execute()
+                if link_update.data:
+                    return jsonify({'message': 'File stored in bucket (schema cache fallback)', 'storage_url': public_url, 'size_bytes': len(content)}), 200
+                return jsonify({'error': 'E-portfolio activity not found'}), 404
+            except Exception as fallback_err:
+                return jsonify({'error': f'Upload fallback failed: {str(fallback_err)}'}), 500
     except Exception as e:
         # Provide clearer server-side error context
         return jsonify({'error': f'Upload failed: {str(e)}'}), 500
