@@ -42,14 +42,25 @@
         <DatePicker v-model="newItem.start_date" placeholder="Start Date (YYYY-MM-DD)" />
         <DatePicker v-model="newItem.finish_date" placeholder="Finish Date (YYYY-MM-DD) - leave empty for Present" />
         <input class="input" v-model="newItem.organisation_module" placeholder="Organisation / Module" />
-        <textarea class="input" v-model="newItem.description" placeholder="Description / Purpose & Context" rows="3" style="resize:vertical"></textarea>
-        <textarea class="input" v-model="newItem.what_i_did" placeholder="What I Did" rows="3" style="resize:vertical"></textarea>
-        <textarea class="input" v-model="newItem.skills_tools_acquired" placeholder="Skills & Tools Applied/Acquired" rows="3" style="resize:vertical"></textarea>
-        <textarea class="input" v-model="newItem.takeaways" placeholder="What I Learned / Key Takeaways" rows="3" style="resize:vertical"></textarea>
-        <textarea class="input" v-model="newItem.artefacts_evidence_links_texts" placeholder="Evidence / Artefacts / Links" rows="2" style="resize:vertical"></textarea>
-        <textarea class="input" v-model="newItem.relevance_career" placeholder="Relevance to Internship / Career" rows="2" style="resize:vertical"></textarea>
-        <label style="font-weight:600">Upload evidence (optional)</label>
-        <input type="file" @change="handleNewFileChange" />
+        <textarea class="input" v-model="newItem.description" @keydown="insertBulletOnTab" placeholder="Description / Purpose & Context" rows="3" style="resize:vertical"></textarea>
+        <textarea class="input" v-model="newItem.what_i_did" @keydown="insertBulletOnTab" placeholder="What I Did" rows="3" style="resize:vertical"></textarea>
+        <textarea class="input" v-model="newItem.skills_tools_acquired" @keydown="insertBulletOnTab" placeholder="Skills & Tools Applied/Acquired" rows="3" style="resize:vertical"></textarea>
+        <textarea class="input" v-model="newItem.takeaways" @keydown="insertBulletOnTab" placeholder="What I Learned / Key Takeaways" rows="3" style="resize:vertical"></textarea>
+        <textarea class="input" v-model="newItem.artefacts_evidence_links_texts" @keydown="insertBulletOnTab" placeholder="Evidence / Artefacts / Links" rows="2" style="resize:vertical"></textarea>
+        <textarea class="input" v-model="newItem.relevance_career" @keydown="insertBulletOnTab" placeholder="Relevance to Internship / Career" rows="2" style="resize:vertical"></textarea>
+        <label style="font-weight:600">Evidence File (hex column) — drag & drop</label>
+        <FileDropzone
+          :accept="fileAccept"
+          @selected="onNewFileSelected"
+          @cleared="onNewFileCleared"
+        >
+          <template #label>
+            <strong>Drag & drop</strong> a file here, or <span class="link">click to choose</span>.
+            <div style="color:#6b7280; font-size:0.85em; margin-top:6px">
+              File will be uploaded right after Save.
+            </div>
+          </template>
+        </FileDropzone>
         <div style="display:flex; gap:8px">
           <button class="btn" @click="addItem"><i class="fas fa-save"></i> Save</button>
           <button class="btn secondary" @click="closeAdd"><i class="fas fa-times"></i> Cancel</button>
@@ -66,14 +77,18 @@
         <DatePicker v-model="editItem.start_date" placeholder="Start Date (YYYY-MM-DD)" />
         <DatePicker v-model="editItem.finish_date" placeholder="Finish Date (YYYY-MM-DD) - leave empty for Present" />
         <input class="input" v-model="editItem.organisation_module" placeholder="Organisation / Module" />
-        <textarea class="input" v-model="editItem.description" placeholder="Description / Purpose & Context" rows="3" style="resize:vertical"></textarea>
-        <textarea class="input" v-model="editItem.what_i_did" placeholder="What I Did" rows="3" style="resize:vertical"></textarea>
-        <textarea class="input" v-model="editItem.skills_tools_acquired" placeholder="Skills & Tools Applied/Acquired" rows="3" style="resize:vertical"></textarea>
-        <textarea class="input" v-model="editItem.takeaways" placeholder="What I Learned / Key Takeaways" rows="3" style="resize:vertical"></textarea>
-        <textarea class="input" v-model="editItem.artefacts_evidence_links_texts" placeholder="Evidence / Artefacts / Links" rows="2" style="resize:vertical"></textarea>
-        <textarea class="input" v-model="editItem.relevance_career" placeholder="Relevance to Internship / Career" rows="2" style="resize:vertical"></textarea>
-        <label style="font-weight:600">Upload evidence (optional)</label>
-        <input type="file" @change="handleEditFileChange" />
+        <textarea class="input" v-model="editItem.description" @keydown="insertBulletOnTab" placeholder="Description / Purpose & Context" rows="3" style="resize:vertical"></textarea>
+        <textarea class="input" v-model="editItem.what_i_did" @keydown="insertBulletOnTab" placeholder="What I Did" rows="3" style="resize:vertical"></textarea>
+        <textarea class="input" v-model="editItem.skills_tools_acquired" @keydown="insertBulletOnTab" placeholder="Skills & Tools Applied/Acquired" rows="3" style="resize:vertical"></textarea>
+        <textarea class="input" v-model="editItem.takeaways" @keydown="insertBulletOnTab" placeholder="What I Learned / Key Takeaways" rows="3" style="resize:vertical"></textarea>
+        <textarea class="input" v-model="editItem.artefacts_evidence_links_texts" @keydown="insertBulletOnTab" placeholder="Evidence / Artefacts / Links" rows="2" style="resize:vertical"></textarea>
+        <textarea class="input" v-model="editItem.relevance_career" @keydown="insertBulletOnTab" placeholder="Relevance to Internship / Career" rows="2" style="resize:vertical"></textarea>
+        <label style="font-weight:600">Evidence File (hex column) — drag & drop</label>
+        <FileDropzone
+          :accept="fileAccept"
+          @selected="onEditFileSelected"
+          @cleared="onEditFileCleared"
+        />
         <div style="display:flex; gap:8px">
           <button class="btn" @click="performEdit"><i class="fas fa-save"></i> Save</button>
           <button class="btn secondary" @click="closeEdit"><i class="fas fa-times"></i> Cancel</button>
@@ -100,6 +115,7 @@ import { isAuthed as authIsAuthed } from '../lib/auth.js'
 import Modal from '../components/Modal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
 import DatePicker from '../components/DatePicker.vue'
+import FileDropzone from '../components/FileDropzone.vue'
 import { formatDate } from '../lib/date.js'
 
 const items = ref([])
@@ -134,6 +150,18 @@ const editItem = ref({
 })
 const newFile = ref(null)
 const editFile = ref(null)
+const fileAccept = [
+  'application/pdf',
+  'image/*',
+  'text/*',
+  'text/csv',
+  'application/csv',
+  // Excel MIME types and extensions
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+  'application/vnd.ms-excel', // legacy .xls
+  'application/vnd.ms-excel.sheet.macroEnabled.12', // .xlsm
+  '.xlsx', '.xls', '.xlsm', '.csv'
+].join(',')
 const showAdd = ref(false)
 const showEdit = ref(false)
 let editTargetId = null
@@ -179,7 +207,7 @@ async function addItem(){
     newFile.value = null
     await refresh()
     showAdd.value = false
-  }catch(e){ error.value = 'Add failed' }
+  }catch(e){ error.value = e?.message || 'Add failed' }
 }
 
 function startEdit(p){
@@ -211,7 +239,7 @@ async function performEdit(){
     editFile.value = null
     closeEdit()
     await refresh()
-  }catch(err){ error.value = 'Update failed' }
+  }catch(err){ error.value = err?.message || 'Update failed' }
 }
 
 function askRemove(p){
@@ -233,13 +261,25 @@ async function performDelete(){
   }catch(err){ error.value = 'Delete failed' }
 }
 
-function handleNewFileChange(event){
-  const files = event.target.files
-  newFile.value = files && files[0] ? files[0] : null
-}
+function onNewFileSelected(file){ newFile.value = file }
+function onNewFileCleared(){ newFile.value = null }
+function onEditFileSelected(file){ editFile.value = file }
+function onEditFileCleared(){ editFile.value = null }
 
-function handleEditFileChange(event){
-  const files = event.target.files
-  editFile.value = files && files[0] ? files[0] : null
+// Upload occurs as part of Save in add/edit flows
+
+function insertBulletOnTab(event){
+  if(event.key === 'Tab'){
+    event.preventDefault()
+    const textarea = event.target
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const val = textarea.value
+    const bullet = '• '
+    textarea.value = val.slice(0, start) + bullet + val.slice(end)
+    const newPos = start + bullet.length
+    textarea.selectionStart = textarea.selectionEnd = newPos
+    textarea.dispatchEvent(new Event('input', { bubbles: true }))
+  }
 }
 </script>
