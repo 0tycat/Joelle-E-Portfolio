@@ -234,8 +234,8 @@ def create_education():
         new_item = {
             'institute_name': data.get('institute_name'),
             'certification': data.get('certification'),
-            'start_date': data.get('start_date'),
-            'finish_date': data.get('finish_date')
+            'start_date': (None if data.get('start_date') == '' else data.get('start_date')),
+            'finish_date': (None if data.get('finish_date') == '' else data.get('finish_date'))
         }
         new_item = {k: v for k, v in new_item.items() if v is not None}
         response = supabase.table('education').insert(new_item).execute()
@@ -370,8 +370,8 @@ def create_community():
         new_item = {
             'organization': data.get('organization'),
             'role': data.get('role'),
-            'start_date': data.get('start_date'),
-            'end_date': data.get('end_date'),
+            'start_date': (None if data.get('start_date') == '' else data.get('start_date')),
+            'end_date': (None if data.get('end_date') == '' else data.get('end_date')),
             'description': data.get('description')
         }
         new_item = {k: v for k, v in new_item.items() if v is not None}
@@ -391,7 +391,10 @@ def update_community(comm_id):
         update_data = {}
         for key in ['organization', 'role', 'start_date', 'end_date', 'description']:
             if key in data:
-                update_data[key] = data[key]
+                value = data[key]
+                if key in ['start_date', 'end_date'] and value == '':
+                    value = None
+                update_data[key] = value
         if not update_data:
             return jsonify({'error': 'No fields to update'}), 400
         response = supabase.table('community_service').update(update_data).eq('id', comm_id).execute()
@@ -513,8 +516,8 @@ def create_e_portfolio():
         new_item = {
             'activity_name': data.get('activity_name'),
             'activity_type': data.get('activity_type'),
-            'start_date': data.get('start_date'),
-            'finish_date': data.get('finish_date'),
+            'start_date': (None if data.get('start_date') == '' else data.get('start_date')),
+            'finish_date': (None if data.get('finish_date') == '' else data.get('finish_date')),
             'organisation_module': data.get('organisation_module'),
             'description': data.get('description'),
             'what_i_did': data.get('what_i_did'),
@@ -549,7 +552,10 @@ def update_e_portfolio(item_id):
         update_data = {}
         for key in allowed_fields:
             if key in data:
-                update_data[key] = data[key]
+                value = data[key]
+                if key in ['start_date', 'finish_date'] and value == '':
+                    value = None
+                update_data[key] = value
 
         if not update_data:
             return jsonify({'error': 'No fields to update'}), 400
