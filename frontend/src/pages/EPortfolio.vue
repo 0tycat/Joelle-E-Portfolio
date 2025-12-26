@@ -48,6 +48,8 @@
         <textarea class="input" v-model="newItem.takeaways" placeholder="What I Learned / Key Takeaways" rows="3" style="resize:vertical"></textarea>
         <textarea class="input" v-model="newItem.artefacts_evidence_links_texts" placeholder="Evidence / Artefacts / Links" rows="2" style="resize:vertical"></textarea>
         <textarea class="input" v-model="newItem.relevance_career" placeholder="Relevance to Internship / Career" rows="2" style="resize:vertical"></textarea>
+        <label style="font-weight:600">Upload evidence (optional)</label>
+        <input type="file" @change="handleNewFileChange" />
         <div style="display:flex; gap:8px">
           <button class="btn" @click="addItem"><i class="fas fa-save"></i> Save</button>
           <button class="btn secondary" @click="closeAdd"><i class="fas fa-times"></i> Cancel</button>
@@ -70,6 +72,8 @@
         <textarea class="input" v-model="editItem.takeaways" placeholder="What I Learned / Key Takeaways" rows="3" style="resize:vertical"></textarea>
         <textarea class="input" v-model="editItem.artefacts_evidence_links_texts" placeholder="Evidence / Artefacts / Links" rows="2" style="resize:vertical"></textarea>
         <textarea class="input" v-model="editItem.relevance_career" placeholder="Relevance to Internship / Career" rows="2" style="resize:vertical"></textarea>
+        <label style="font-weight:600">Upload evidence (optional)</label>
+        <input type="file" @change="handleEditFileChange" />
         <div style="display:flex; gap:8px">
           <button class="btn" @click="performEdit"><i class="fas fa-save"></i> Save</button>
           <button class="btn secondary" @click="closeEdit"><i class="fas fa-times"></i> Cancel</button>
@@ -91,7 +95,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { apiGet, postEPortfolio, deleteEPortfolio, putEPortfolio } from '../lib/api.js'
+import { apiGet, postEPortfolio, deleteEPortfolio, putEPortfolio, uploadEPortfolioFile, clearEPortfolioFile } from '../lib/api.js'
 import { isAuthed as authIsAuthed } from '../lib/auth.js'
 import Modal from '../components/Modal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
@@ -128,6 +132,8 @@ const editItem = ref({
   artefacts_evidence_links_texts: '',
   relevance_career: ''
 })
+const newFile = ref(null)
+const editFile = ref(null)
 const showAdd = ref(false)
 const showEdit = ref(false)
 let editTargetId = null
@@ -152,7 +158,11 @@ onMounted(refresh)
 async function addItem(){
   error.value = ''
   try{
-    await postEPortfolio(newItem.value)
+    const created = await postEPortfolio(newItem.value)
+    const createdId = created?.data?.[0]?.id
+    if(createdId && newFile.value){
+      await uploadEPortfolioFile(createdId, newFile.value)
+    }
     newItem.value = {
       activity_name: '',
       activity_type: '',
@@ -166,6 +176,7 @@ async function addItem(){
       artefacts_evidence_links_texts: '',
       relevance_career: ''
     }
+    newFile.value = null
     await refresh()
     showAdd.value = false
   }catch(e){ error.value = 'Add failed' }
@@ -194,6 +205,10 @@ async function performEdit(){
   error.value = ''
   try{
     await putEPortfolio(editTargetId, editItem.value)
+    if(editFile.value){
+      await uploadEPortfolioFile(editTargetId, editFile.value)
+    }
+    editFile.value = null
     closeEdit()
     await refresh()
   }catch(err){ error.value = 'Update failed' }
@@ -216,5 +231,15 @@ async function performDelete(){
     closeConfirm()
     await refresh()
   }catch(err){ error.value = 'Delete failed' }
+}
+
+function handleNewFileChange(event){
+  const files = event.target.files
+  newFile.value = files && files[0] ? files[0] : null
+}
+
+function handleEditFileChange(event){
+  const files = event.target.files
+  editFile.value = files && files[0] ? files[0] : null
 }
 </script>

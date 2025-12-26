@@ -581,6 +581,36 @@ def delete_e_portfolio(item_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Upload artefact file (stores as hex string in artefacts_evidence_files)
+@app.route('/api/e-portfolio/<int:item_id>/upload', methods=['POST', 'OPTIONS'])
+@require_auth
+def upload_e_portfolio_file(item_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        # Allow clearing existing file with clear=true and no file
+        clear_flag = request.form.get('clear')
+        uploaded = request.files.get('file') if request.files else None
+
+        if clear_flag and clear_flag.lower() == 'true':
+            response = supabase.table('e_portfolio').update({'artefacts_evidence_files': None}).eq('id', item_id).execute()
+            if response.data:
+                return jsonify({'message': 'File cleared'}), 200
+            return jsonify({'error': 'E-portfolio activity not found'}), 404
+
+        if not uploaded:
+            return jsonify({'error': 'No file provided'}), 400
+
+        content = uploaded.read() or b''
+        hex_value = '\\x' + content.hex()
+
+        response = supabase.table('e_portfolio').update({'artefacts_evidence_files': hex_value}).eq('id', item_id).execute()
+        if response.data:
+            return jsonify({'message': 'File uploaded', 'size_bytes': len(content)}), 200
+        return jsonify({'error': 'E-portfolio activity not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # Proficiency levels endpoint (for Skills dropdown)
 @app.route('/api/prof-levels', methods=['GET'])
 def get_prof_levels():

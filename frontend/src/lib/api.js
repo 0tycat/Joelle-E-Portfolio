@@ -110,3 +110,29 @@ export async function putEPortfolio(id, payload){
 export async function deleteEPortfolio(id){
   return apiDelete(`/api/e-portfolio/${id}`)
 }
+
+// E-Portfolio file upload (artefacts_evidence_files as hex)
+export async function uploadEPortfolioFile(id, file){
+  const form = new FormData()
+  form.append('file', file)
+  const res = await fetch(`${API_URL}/api/e-portfolio/${id}/upload`,{
+    method:'POST',
+    headers:{ ...authHeader() },
+    body: form
+  })
+  if(!res.ok) throw new Error('Request failed')
+  return await res.json()
+}
+
+// Clear uploaded file
+export async function clearEPortfolioFile(id){
+  const form = new FormData()
+  form.append('clear','true')
+  const res = await fetch(`${API_URL}/api/e-portfolio/${id}/upload`,{
+    method:'POST',
+    headers:{ ...authHeader() },
+    body: form
+  })
+  if(!res.ok) throw new Error('Request failed')
+  return await res.json()
+}
