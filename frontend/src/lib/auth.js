@@ -113,10 +113,12 @@ export async function login(email, password){
     })
     if(!res.ok) return false
     const data = await res.json()
-    if(data.access_token){
-      setAccessToken(data.access_token)
-      if(data.refresh_token){
-        localStorage.setItem('refresh_token', data.refresh_token)
+    const access = data.access_token || data?.session?.access_token
+    const refresh = data.refresh_token || data?.session?.refresh_token
+    if(access){
+      setAccessToken(access)
+      if(refresh){
+        localStorage.setItem('refresh_token', refresh)
       }
       return true
     }
