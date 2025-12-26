@@ -30,7 +30,7 @@ export function clearAuth(){
 export async function validateToken(token){
   if(!token) return false
   try{
-    const res = await fetch(`${AUTH_URL}/auth/validate`,{
+    const res = await fetch(`${AUTH_URL}/api/auth/validate`,{
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'Authorization': `Bearer ${token}` }
     })
@@ -46,7 +46,7 @@ export async function tryRefreshToken(){
   const refreshToken = localStorage.getItem('refresh_token')
   if(!refreshToken) return false
   try{
-    const res = await fetch(`${AUTH_URL}/auth/refresh`,{
+    const res = await fetch(`${AUTH_URL}/api/auth/refresh`,{
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ refresh_token: refreshToken })
@@ -94,7 +94,7 @@ export async function initializeAuth(){
 export async function logout(){
   const token = authToken.value
   try{
-    await fetch(`${AUTH_URL}/auth/logout`,{
+    await fetch(`${AUTH_URL}/api/auth/logout`,{
       method:'POST', headers:{ ...(token?{ Authorization: `Bearer ${token}` }:{} ) }
     })
   }catch(err){
@@ -106,7 +106,7 @@ export async function logout(){
 
 export async function login(email, password){
   try{
-    const res = await fetch(`${AUTH_URL}/auth/login`,{
+    const res = await fetch(`${AUTH_URL}/api/auth/login`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ email, password })
