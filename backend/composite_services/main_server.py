@@ -28,6 +28,10 @@ supabase_anon: Client = create_client(
 def require_auth(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        # Allow OPTIONS requests to pass through without auth
+        if request.method == 'OPTIONS':
+            return f(*args, **kwargs)
+        
         auth_header = request.headers.get('Authorization')
         if not auth_header or not auth_header.startswith('Bearer '):
             return jsonify({'error': 'Missing or invalid authorization header'}), 401
