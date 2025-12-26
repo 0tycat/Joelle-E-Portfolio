@@ -302,8 +302,8 @@ def create_work():
         new_item = {
             'company': data.get('company'),
             'position': data.get('position'),
-            'start_date': data.get('start_date'),
-            'end_date': data.get('end_date'),
+            'start_date': (None if data.get('start_date') == '' else data.get('start_date')),
+            'end_date': (None if data.get('end_date') == '' else data.get('end_date')),
             'description': data.get('description')
         }
         new_item = {k: v for k, v in new_item.items() if v is not None}
@@ -323,7 +323,10 @@ def update_work(work_id):
         update_data = {}
         for key in ['company', 'position', 'start_date', 'end_date', 'description']:
             if key in data:
-                update_data[key] = data[key]
+                value = data[key]
+                if key in ['start_date', 'end_date'] and value == '':
+                    value = None
+                update_data[key] = value
         if not update_data:
             return jsonify({'error': 'No fields to update'}), 400
         response = supabase.table('work_experience').update(update_data).eq('id', work_id).execute()
