@@ -154,12 +154,123 @@ def get_skills():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Create new skill
+@app.route('/api/skills', methods=['POST', 'OPTIONS'])
+@require_auth
+def create_skill():
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        data = request.get_json()
+        if not data.get('skill_name'):
+            return jsonify({'error': 'skill_name is required'}), 400
+        new_skill = {
+            'skill_name': data.get('skill_name'),
+            'proficiency': data.get('proficiency'),
+            'category': data.get('category')
+        }
+        new_skill = {k: v for k, v in new_skill.items() if v is not None}
+        response = supabase.table('skills').insert(new_skill).execute()
+        return jsonify({'data': response.data, 'message': 'Skill created'}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Update skill
+@app.route('/api/skills/<int:skill_id>', methods=['PUT', 'OPTIONS'])
+@require_auth
+def update_skill(skill_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        data = request.get_json()
+        update_data = {}
+        for key in ['skill_name', 'proficiency', 'category']:
+            if key in data:
+                update_data[key] = data[key]
+        if not update_data:
+            return jsonify({'error': 'No fields to update'}), 400
+        response = supabase.table('skills').update(update_data).eq('id', skill_id).execute()
+        if response.data:
+            return jsonify({'data': response.data, 'message': 'Skill updated'}), 200
+        return jsonify({'error': 'Skill not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Delete skill
+@app.route('/api/skills/<int:skill_id>', methods=['DELETE', 'OPTIONS'])
+@require_auth
+def delete_skill(skill_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        response = supabase.table('skills').delete().eq('id', skill_id).execute()
+        if response.data:
+            return jsonify({'message': 'Skill deleted'}), 200
+        return jsonify({'error': 'Skill not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # Education endpoint
 @app.route('/api/education', methods=['GET'])
 def get_education():
     try:
         response = supabase.table('education').select('*').order('start_date', desc=True).execute()
         return jsonify(response.data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Create new education
+@app.route('/api/education', methods=['POST', 'OPTIONS'])
+@require_auth
+def create_education():
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        data = request.get_json()
+        new_item = {
+            'institute_name': data.get('institute_name'),
+            'certification': data.get('certification'),
+            'start_date': data.get('start_date'),
+            'finish_date': data.get('finish_date')
+        }
+        new_item = {k: v for k, v in new_item.items() if v is not None}
+        response = supabase.table('education').insert(new_item).execute()
+        return jsonify({'data': response.data, 'message': 'Education created'}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Update education
+@app.route('/api/education/<int:edu_id>', methods=['PUT', 'OPTIONS'])
+@require_auth
+def update_education(edu_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        data = request.get_json()
+        update_data = {}
+        for key in ['institute_name', 'certification', 'start_date', 'finish_date']:
+            if key in data:
+                update_data[key] = data[key]
+        if not update_data:
+            return jsonify({'error': 'No fields to update'}), 400
+        response = supabase.table('education').update(update_data).eq('id', edu_id).execute()
+        if response.data:
+            return jsonify({'data': response.data, 'message': 'Education updated'}), 200
+        return jsonify({'error': 'Education not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Delete education
+@app.route('/api/education/<int:edu_id>', methods=['DELETE', 'OPTIONS'])
+@require_auth
+def delete_education(edu_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        response = supabase.table('education').delete().eq('id', edu_id).execute()
+        if response.data:
+            return jsonify({'message': 'Education deleted'}), 200
+        return jsonify({'error': 'Education not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -172,6 +283,62 @@ def get_work():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Create new work experience
+@app.route('/api/work', methods=['POST', 'OPTIONS'])
+@require_auth
+def create_work():
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        data = request.get_json()
+        new_item = {
+            'company': data.get('company'),
+            'position': data.get('position'),
+            'start_date': data.get('start_date'),
+            'end_date': data.get('end_date'),
+            'description': data.get('description')
+        }
+        new_item = {k: v for k, v in new_item.items() if v is not None}
+        response = supabase.table('work_experience').insert(new_item).execute()
+        return jsonify({'data': response.data, 'message': 'Work experience created'}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Update work experience
+@app.route('/api/work/<int:work_id>', methods=['PUT', 'OPTIONS'])
+@require_auth
+def update_work(work_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        data = request.get_json()
+        update_data = {}
+        for key in ['company', 'position', 'start_date', 'end_date', 'description']:
+            if key in data:
+                update_data[key] = data[key]
+        if not update_data:
+            return jsonify({'error': 'No fields to update'}), 400
+        response = supabase.table('work_experience').update(update_data).eq('id', work_id).execute()
+        if response.data:
+            return jsonify({'data': response.data, 'message': 'Work experience updated'}), 200
+        return jsonify({'error': 'Work experience not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Delete work experience
+@app.route('/api/work/<int:work_id>', methods=['DELETE', 'OPTIONS'])
+@require_auth
+def delete_work(work_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        response = supabase.table('work_experience').delete().eq('id', work_id).execute()
+        if response.data:
+            return jsonify({'message': 'Work experience deleted'}), 200
+        return jsonify({'error': 'Work experience not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # Community service endpoint
 @app.route('/api/community', methods=['GET'])
 def get_community():
@@ -181,12 +348,123 @@ def get_community():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Create new community service
+@app.route('/api/community', methods=['POST', 'OPTIONS'])
+@require_auth
+def create_community():
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        data = request.get_json()
+        new_item = {
+            'organization': data.get('organization'),
+            'role': data.get('role'),
+            'start_date': data.get('start_date'),
+            'end_date': data.get('end_date'),
+            'description': data.get('description')
+        }
+        new_item = {k: v for k, v in new_item.items() if v is not None}
+        response = supabase.table('community_service').insert(new_item).execute()
+        return jsonify({'data': response.data, 'message': 'Community service created'}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Update community service
+@app.route('/api/community/<int:comm_id>', methods=['PUT', 'OPTIONS'])
+@require_auth
+def update_community(comm_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        data = request.get_json()
+        update_data = {}
+        for key in ['organization', 'role', 'start_date', 'end_date', 'description']:
+            if key in data:
+                update_data[key] = data[key]
+        if not update_data:
+            return jsonify({'error': 'No fields to update'}), 400
+        response = supabase.table('community_service').update(update_data).eq('id', comm_id).execute()
+        if response.data:
+            return jsonify({'data': response.data, 'message': 'Community service updated'}), 200
+        return jsonify({'error': 'Community service not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Delete community service
+@app.route('/api/community/<int:comm_id>', methods=['DELETE', 'OPTIONS'])
+@require_auth
+def delete_community(comm_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        response = supabase.table('community_service').delete().eq('id', comm_id).execute()
+        if response.data:
+            return jsonify({'message': 'Community service deleted'}), 200
+        return jsonify({'error': 'Community service not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # Projects/Other information endpoint
 @app.route('/api/projects', methods=['GET'])
 def get_projects():
     try:
         response = supabase.table('other_information').select('*').execute()
         return jsonify(response.data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Create new project
+@app.route('/api/projects', methods=['POST', 'OPTIONS'])
+@require_auth
+def create_project():
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        data = request.get_json()
+        new_item = {
+            'project_name': data.get('project_name'),
+            'description': data.get('description'),
+            'technologies': data.get('technologies'),
+            'url': data.get('url')
+        }
+        new_item = {k: v for k, v in new_item.items() if v is not None}
+        response = supabase.table('other_information').insert(new_item).execute()
+        return jsonify({'data': response.data, 'message': 'Project created'}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Update project
+@app.route('/api/projects/<int:proj_id>', methods=['PUT', 'OPTIONS'])
+@require_auth
+def update_project(proj_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        data = request.get_json()
+        update_data = {}
+        for key in ['project_name', 'description', 'technologies', 'url']:
+            if key in data:
+                update_data[key] = data[key]
+        if not update_data:
+            return jsonify({'error': 'No fields to update'}), 400
+        response = supabase.table('other_information').update(update_data).eq('id', proj_id).execute()
+        if response.data:
+            return jsonify({'data': response.data, 'message': 'Project updated'}), 200
+        return jsonify({'error': 'Project not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Delete project
+@app.route('/api/projects/<int:proj_id>', methods=['DELETE', 'OPTIONS'])
+@require_auth
+def delete_project(proj_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        response = supabase.table('other_information').delete().eq('id', proj_id).execute()
+        if response.data:
+            return jsonify({'message': 'Project deleted'}), 200
+        return jsonify({'error': 'Project not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
