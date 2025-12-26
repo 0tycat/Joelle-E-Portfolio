@@ -45,17 +45,19 @@ def login():
     if request.method == 'OPTIONS':
         return '', 204
     try:
-        data = request.get_json()
+        data = request.get_json() or {}
         email = data.get('email')
         password = data.get('password')
         if not email or not password:
-            return jsonify({'error': 'Email and password required'}), 400
-        response = supabase_anon.auth.sign_in_with_password({"email": email, "password": password})
+            return jsonify({'error': 'Email and password are required'}), 400
+        response = supabase_anon.auth.sign_in_with_password({'email': email, 'password': password})
         return jsonify({
-            'user': response.user.model_dump(),
-            'session': {
-                'access_token': response.session.access_token,
-                'refresh_token': response.session.refresh_token
+            'message': 'Login successful',
+            'access_token': response.session.access_token,
+            'refresh_token': response.session.refresh_token,
+            'user': {
+                'id': response.user.id,
+                'email': response.user.email
             }
         }), 200
     except Exception as e:
@@ -79,13 +81,21 @@ def validate_token():
     if request.method == 'OPTIONS':
         return '', 204
     try:
-        data = request.get_json()
-        token = data.get('token')
-        if not token:
-            return jsonify({'error': 'Token required'}), 400
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer '):
+            return jsonify({'error': 'No valid authorization header'}), 401
+        token = auth_header.split(' ')[1]
         user = supabase_anon.auth.get_user(token)
-        return jsonify({'valid': True, 'user': user.model_dump()}), 200
-    except Exception as e:
+        if not getattr(user, 'user', None):
+            return jsonify({'error': 'Invalid token'}), 401
+        return jsonify({
+            'valid': True,
+            'user': {
+                'id': user.user.id,
+                'email': user.user.email
+            }
+        }), 200
+    except Exception:
         return jsonify({'error': 'Invalid token'}), 401
 
 # Auth Refresh endpoint
