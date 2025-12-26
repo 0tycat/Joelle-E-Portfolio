@@ -120,7 +120,16 @@ export async function uploadEPortfolioFile(id, file){
     headers:{ ...authHeader() },
     body: form
   })
-  if(!res.ok) throw new Error('Request failed')
+  if(!res.ok){
+    let msg = `Request failed (${res.status})`
+    try{
+      const data = await res.json()
+      msg = data?.error || msg
+    }catch{
+      try{ msg = await res.text() }catch{}
+    }
+    throw new Error(msg)
+  }
   return await res.json()
 }
 
@@ -133,6 +142,15 @@ export async function clearEPortfolioFile(id){
     headers:{ ...authHeader() },
     body: form
   })
-  if(!res.ok) throw new Error('Request failed')
+  if(!res.ok){
+    let msg = `Request failed (${res.status})`
+    try{
+      const data = await res.json()
+      msg = data?.error || msg
+    }catch{
+      try{ msg = await res.text() }catch{}
+    }
+    throw new Error(msg)
+  }
   return await res.json()
 }

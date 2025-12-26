@@ -588,6 +588,8 @@ def upload_e_portfolio_file(item_id):
     if request.method == 'OPTIONS':
         return '', 204
     try:
+        # Optional max size guard (10 MB)
+        MAX_BYTES = 10 * 1024 * 1024
         # Allow clearing existing file with clear=true and no file
         clear_flag = request.form.get('clear')
         uploaded = request.files.get('file') if request.files else None
@@ -602,6 +604,8 @@ def upload_e_portfolio_file(item_id):
             return jsonify({'error': 'No file provided'}), 400
 
         content = uploaded.read() or b''
+        if len(content) > MAX_BYTES:
+            return jsonify({'error': 'File too large (max 10 MB)'}), 413
         hex_value = '\\x' + content.hex()
 
         response = supabase.table('e_portfolio').update({'artefacts_evidence_files': hex_value}).eq('id', item_id).execute()
@@ -609,7 +613,8 @@ def upload_e_portfolio_file(item_id):
             return jsonify({'message': 'File uploaded', 'size_bytes': len(content)}), 200
         return jsonify({'error': 'E-portfolio activity not found'}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        # Provide clearer server-side error context
+        return jsonify({'error': f'Upload failed: {str(e)}'}), 500
 
 # Proficiency levels endpoint (for Skills dropdown)
 @app.route('/api/prof-levels', methods=['GET'])
