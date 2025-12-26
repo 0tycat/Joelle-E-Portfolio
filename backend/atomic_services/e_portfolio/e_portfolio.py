@@ -70,13 +70,26 @@ def create_e_portfolio():
     try:
         data = request.get_json()
 
-        if not data.get('activity_name') or not data.get('description'):
-            return jsonify({'error': 'activity_name and description are required'}), 400
+        if not data.get('activity_name'):
+            return jsonify({'error': 'activity_name is required'}), 400
 
         new_item = {
             'activity_name': data.get('activity_name'),
-            'description': data.get('description')
+            'activity_type': data.get('activity_type'),
+            'start_date': data.get('start_date'),
+            'finish_date': data.get('finish_date'),
+            'organisation_module': data.get('organisation_module'),
+            'description': data.get('description'),
+            'what_i_did': data.get('what_i_did'),
+            'skills_tools_acquired': data.get('skills_tools_acquired'),
+            'takeaways': data.get('takeaways'),
+            'artefacts_evidence_files': data.get('artefacts_evidence_files'),
+            'artefacts_evidence_links_texts': data.get('artefacts_evidence_links_texts'),
+            'relevance_career': data.get('relevance_career')
         }
+
+        # Remove None values to avoid sending null where not needed
+        new_item = {k: v for k, v in new_item.items() if v is not None}
 
         response = supabase.table(TABLE_NAME).insert(new_item).execute()
         return jsonify({'data': response.data, 'message': 'E-portfolio activity created'}), 201
@@ -90,8 +103,16 @@ def update_e_portfolio(item_id: int):
     try:
         data = request.get_json()
 
+        # Build update dict with all allowed fields
+        allowed_fields = [
+            'activity_name', 'activity_type', 'start_date', 'finish_date',
+            'organisation_module', 'description', 'what_i_did',
+            'skills_tools_acquired', 'takeaways', 'artefacts_evidence_files',
+            'artefacts_evidence_links_texts', 'relevance_career'
+        ]
+
         update_data = {}
-        for key in ['activity_name', 'description']:
+        for key in allowed_fields:
             if key in data:
                 update_data[key] = data[key]
 

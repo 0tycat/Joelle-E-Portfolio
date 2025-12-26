@@ -10,7 +10,7 @@ load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*", "methods": ["GET", "POST", "OPTIONS"], "allow_headers": ["Content-Type", "Authorization"]}})
+CORS(app, resources={r"/api/*": {"origins": "*", "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "allow_headers": ["Content-Type", "Authorization"]}})
 
 # Initialize Supabase client
 supabase: Client = create_client(
@@ -196,6 +196,93 @@ def get_e_portfolio():
     try:
         response = supabase.table('e_portfolio').select('*').execute()
         return jsonify(response.data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Get single e-portfolio activity by ID
+@app.route('/api/e-portfolio/<int:item_id>', methods=['GET'])
+def get_e_portfolio_item(item_id):
+    try:
+        response = supabase.table('e_portfolio').select('*').eq('id', item_id).execute()
+        if response.data:
+            return jsonify(response.data[0]), 200
+        return jsonify({'error': 'E-portfolio activity not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Create new e-portfolio activity
+@app.route('/api/e-portfolio', methods=['POST', 'OPTIONS'])
+@require_auth
+def create_e_portfolio():
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        data = request.get_json()
+        if not data.get('activity_name'):
+            return jsonify({'error': 'activity_name is required'}), 400
+
+        new_item = {
+            'activity_name': data.get('activity_name'),
+            'activity_type': data.get('activity_type'),
+            'start_date': data.get('start_date'),
+            'finish_date': data.get('finish_date'),
+            'organisation_module': data.get('organisation_module'),
+            'description': data.get('description'),
+            'what_i_did': data.get('what_i_did'),
+            'skills_tools_acquired': data.get('skills_tools_acquired'),
+            'takeaways': data.get('takeaways'),
+            'artefacts_evidence_files': data.get('artefacts_evidence_files'),
+            'artefacts_evidence_links_texts': data.get('artefacts_evidence_links_texts'),
+            'relevance_career': data.get('relevance_career')
+        }
+        # Remove None values
+        new_item = {k: v for k, v in new_item.items() if v is not None}
+
+        response = supabase.table('e_portfolio').insert(new_item).execute()
+        return jsonify({'data': response.data, 'message': 'E-portfolio activity created'}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Update e-portfolio activity
+@app.route('/api/e-portfolio/<int:item_id>', methods=['PUT', 'OPTIONS'])
+@require_auth
+def update_e_portfolio(item_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        data = request.get_json()
+        allowed_fields = [
+            'activity_name', 'activity_type', 'start_date', 'finish_date',
+            'organisation_module', 'description', 'what_i_did',
+            'skills_tools_acquired', 'takeaways', 'artefacts_evidence_files',
+            'artefacts_evidence_links_texts', 'relevance_career'
+        ]
+        update_data = {}
+        for key in allowed_fields:
+            if key in data:
+                update_data[key] = data[key]
+
+        if not update_data:
+            return jsonify({'error': 'No fields to update'}), 400
+
+        response = supabase.table('e_portfolio').update(update_data).eq('id', item_id).execute()
+        if response.data:
+            return jsonify({'data': response.data, 'message': 'E-portfolio activity updated'}), 200
+        return jsonify({'error': 'E-portfolio activity not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Delete e-portfolio activity
+@app.route('/api/e-portfolio/<int:item_id>', methods=['DELETE', 'OPTIONS'])
+@require_auth
+def delete_e_portfolio(item_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        response = supabase.table('e_portfolio').delete().eq('id', item_id).execute()
+        if response.data:
+            return jsonify({'message': 'E-portfolio activity deleted'}), 200
+        return jsonify({'error': 'E-portfolio activity not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
