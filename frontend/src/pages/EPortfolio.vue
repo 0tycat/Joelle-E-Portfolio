@@ -42,12 +42,12 @@
         <DatePicker v-model="newItem.start_date" placeholder="Start Date (YYYY-MM-DD)" />
         <DatePicker v-model="newItem.finish_date" placeholder="Finish Date (YYYY-MM-DD) - leave empty for Present" />
         <input class="input" v-model="newItem.organisation_module" placeholder="Organisation / Module" />
-        <textarea class="input" v-model="newItem.description" @keydown="insertBulletOnTab" placeholder="Description / Purpose & Context" rows="3" style="resize:vertical"></textarea>
-        <textarea class="input" v-model="newItem.what_i_did" @keydown="insertBulletOnTab" placeholder="What I Did" rows="3" style="resize:vertical"></textarea>
-        <textarea class="input" v-model="newItem.skills_tools_acquired" @keydown="insertBulletOnTab" placeholder="Skills & Tools Applied/Acquired" rows="3" style="resize:vertical"></textarea>
-        <textarea class="input" v-model="newItem.takeaways" @keydown="insertBulletOnTab" placeholder="What I Learned / Key Takeaways" rows="3" style="resize:vertical"></textarea>
-        <textarea class="input" v-model="newItem.artefacts_evidence_links_texts" @keydown="insertBulletOnTab" placeholder="Evidence / Artefacts / Links" rows="2" style="resize:vertical"></textarea>
-        <textarea class="input" v-model="newItem.relevance_career" @keydown="insertBulletOnTab" placeholder="Relevance to Internship / Career" rows="2" style="resize:vertical"></textarea>
+        <textarea class="input" v-model="newItem.description" @keydown="insertBulletOnEnter" placeholder="Description / Purpose & Context" rows="3" style="resize:vertical"></textarea>
+        <textarea class="input" v-model="newItem.what_i_did" @keydown="insertBulletOnEnter" placeholder="What I Did" rows="3" style="resize:vertical"></textarea>
+        <textarea class="input" v-model="newItem.skills_tools_acquired" @keydown="insertBulletOnEnter" placeholder="Skills & Tools Applied/Acquired" rows="3" style="resize:vertical"></textarea>
+        <textarea class="input" v-model="newItem.takeaways" @keydown="insertBulletOnEnter" placeholder="What I Learned / Key Takeaways" rows="3" style="resize:vertical"></textarea>
+        <textarea class="input" v-model="newItem.artefacts_evidence_links_texts" @keydown="insertBulletOnEnter" placeholder="Evidence / Artefacts / Links" rows="2" style="resize:vertical"></textarea>
+        <textarea class="input" v-model="newItem.relevance_career" @keydown="insertBulletOnEnter" placeholder="Relevance to Internship / Career" rows="2" style="resize:vertical"></textarea>
         <label style="font-weight:600">Evidence File (hex column) — drag & drop</label>
         <FileDropzone
           :accept="fileAccept"
@@ -77,12 +77,12 @@
         <DatePicker v-model="editItem.start_date" placeholder="Start Date (YYYY-MM-DD)" />
         <DatePicker v-model="editItem.finish_date" placeholder="Finish Date (YYYY-MM-DD) - leave empty for Present" />
         <input class="input" v-model="editItem.organisation_module" placeholder="Organisation / Module" />
-        <textarea class="input" v-model="editItem.description" @keydown="insertBulletOnTab" placeholder="Description / Purpose & Context" rows="3" style="resize:vertical"></textarea>
-        <textarea class="input" v-model="editItem.what_i_did" @keydown="insertBulletOnTab" placeholder="What I Did" rows="3" style="resize:vertical"></textarea>
-        <textarea class="input" v-model="editItem.skills_tools_acquired" @keydown="insertBulletOnTab" placeholder="Skills & Tools Applied/Acquired" rows="3" style="resize:vertical"></textarea>
-        <textarea class="input" v-model="editItem.takeaways" @keydown="insertBulletOnTab" placeholder="What I Learned / Key Takeaways" rows="3" style="resize:vertical"></textarea>
-        <textarea class="input" v-model="editItem.artefacts_evidence_links_texts" @keydown="insertBulletOnTab" placeholder="Evidence / Artefacts / Links" rows="2" style="resize:vertical"></textarea>
-        <textarea class="input" v-model="editItem.relevance_career" @keydown="insertBulletOnTab" placeholder="Relevance to Internship / Career" rows="2" style="resize:vertical"></textarea>
+        <textarea class="input" v-model="editItem.description" @keydown="insertBulletOnEnter" placeholder="Description / Purpose & Context" rows="3" style="resize:vertical"></textarea>
+        <textarea class="input" v-model="editItem.what_i_did" @keydown="insertBulletOnEnter" placeholder="What I Did" rows="3" style="resize:vertical"></textarea>
+        <textarea class="input" v-model="editItem.skills_tools_acquired" @keydown="insertBulletOnEnter" placeholder="Skills & Tools Applied/Acquired" rows="3" style="resize:vertical"></textarea>
+        <textarea class="input" v-model="editItem.takeaways" @keydown="insertBulletOnEnter" placeholder="What I Learned / Key Takeaways" rows="3" style="resize:vertical"></textarea>
+        <textarea class="input" v-model="editItem.artefacts_evidence_links_texts" @keydown="insertBulletOnEnter" placeholder="Evidence / Artefacts / Links" rows="2" style="resize:vertical"></textarea>
+        <textarea class="input" v-model="editItem.relevance_career" @keydown="insertBulletOnEnter" placeholder="Relevance to Internship / Career" rows="2" style="resize:vertical"></textarea>
         <label style="font-weight:600">Evidence File (hex column) — drag & drop</label>
         <FileDropzone
           :accept="fileAccept"
@@ -268,15 +268,18 @@ function onEditFileCleared(){ editFile.value = null }
 
 // Upload occurs as part of Save in add/edit flows
 
-function insertBulletOnTab(event){
-  if(event.key === 'Tab'){
+function insertBulletOnEnter(event){
+  if(event.key === 'Enter' && !event.shiftKey){
     event.preventDefault()
     const textarea = event.target
     const start = textarea.selectionStart
-    const end = textarea.selectionEnd
     const val = textarea.value
-    const bullet = '• '
-    textarea.value = val.slice(0, start) + bullet + val.slice(end)
+    const before = val.slice(0, start)
+    const after = val.slice(start)
+    const lines = before.split('\n')
+    const currentLine = lines[lines.length - 1]
+    const bullet = (before.trim() === '' || currentLine.trim() === '') ? '• ' : '\n• '
+    textarea.value = before + bullet + after
     const newPos = start + bullet.length
     textarea.selectionStart = textarea.selectionEnd = newPos
     textarea.dispatchEvent(new Event('input', { bubbles: true }))

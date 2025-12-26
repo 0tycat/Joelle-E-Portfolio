@@ -201,21 +201,6 @@ function setSortAndClose(mode){
 }
 
 function handleDescriptionKeydown(event, item){
-  // Insert bullet on Tab
-  if(event.key === 'Tab'){
-    event.preventDefault()
-    const textarea = event.target
-    const cursorPos = textarea.selectionStart
-    const text = item.description || ''
-    const beforeCursor = text.substring(0, cursorPos)
-    const afterCursor = text.substring(cursorPos)
-    const bullet = '• '
-    item.description = beforeCursor + bullet + afterCursor
-    setTimeout(() => {
-      textarea.selectionStart = textarea.selectionEnd = cursorPos + bullet.length
-    }, 0)
-    return
-  }
   if(event.key === 'Enter' && !event.shiftKey){
     event.preventDefault()
     const textarea = event.target
