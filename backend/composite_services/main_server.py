@@ -254,7 +254,11 @@ def update_education(edu_id):
         update_data = {}
         for key in ['institute_name', 'certification', 'start_date', 'finish_date']:
             if key in data:
-                update_data[key] = data[key]
+                # Convert empty strings to None for date fields
+                value = data[key]
+                if key in ['start_date', 'finish_date'] and value == '':
+                    value = None
+                update_data[key] = value
         if not update_data:
             return jsonify({'error': 'No fields to update'}), 400
         response = supabase.table('education').update(update_data).eq('id', edu_id).execute()
