@@ -634,11 +634,11 @@ def upload_e_portfolio_file(item_id):
                 path = f"{item_id}/{uploaded.filename or 'evidence'}"
                 mime = uploaded.mimetype or 'application/octet-stream'
 
-                # Upload to storage bucket with upsert=true to overwrite if exists
+                # Upload to storage bucket
                 supabase.storage.from_(bucket_name).upload(
                     path,
                     content,
-                    file_options={'contentType': mime, 'upsert': True}
+                    {'contentType': mime}
                 )
                 
                 # Get public URL
