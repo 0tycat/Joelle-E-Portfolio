@@ -1,7 +1,6 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from supabase import create_client, Client
-from storage3.types import FileOptions
 from functools import wraps
 from dotenv import load_dotenv
 import os
@@ -639,11 +638,11 @@ def upload_e_portfolio_file(item_id):
                 path = f"{item_id}/{uploaded.filename or 'evidence'}"
                 mime = uploaded.mimetype or 'application/octet-stream'
 
-                # Upload to storage bucket using FileOptions
+                # Upload to storage bucket (pass content_type as a dict)
                 supabase.storage.from_(bucket_name).upload(
                     path,
                     content,
-                    file_options=FileOptions(content_type=mime)
+                    {'content_type': mime}
                 )
                 public_url_resp = supabase.storage.from_(bucket_name).get_public_url(path)
                 public_url = (
