@@ -643,7 +643,7 @@ def upload_e_portfolio_file(item_id):
                 supabase.storage.from_(bucket_name).upload(
                     path,
                     content,
-                    FileOptions(content_type=mime, upsert=True)
+                    file_options=FileOptions(content_type=mime)
                 )
                 public_url_resp = supabase.storage.from_(bucket_name).get_public_url(path)
                 public_url = (
