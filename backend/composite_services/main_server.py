@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from supabase import create_client, Client
+from supabase.storage import FileOptions
 from functools import wraps
 from dotenv import load_dotenv
 import os
@@ -624,22 +625,32 @@ def upload_e_portfolio_file(item_id):
                 bucket_name = 'eportfolio-evidence'
                 # Ensure bucket exists (ignore if already present)
                 try:
-                    supabase.storage.get_bucket(bucket_name)
+                    buckets = supabase.storage.list_buckets()
+                    bucket_names = [b.get('name') or b.get('id') for b in (buckets or [])]
+                    if bucket_name not in bucket_names:
+                        supabase.storage.create_bucket(bucket_name, public=True)
                 except Exception:
+                    # If listing fails, attempt to create and ignore errors
                     try:
-                        supabase.storage.create_bucket(bucket_name, {'public': True})
+                        supabase.storage.create_bucket(bucket_name, public=True)
                     except Exception:
                         pass
 
                 path = f"{item_id}/{uploaded.filename or 'evidence'}"
                 mime = uploaded.mimetype or 'application/octet-stream'
 
-                # Upload to storage bucket as fallback (pass raw bytes)
-                supabase.storage.from_(bucket_name).upload(path, content, {
-                    'content-type': mime,
-                    'upsert': True
-                })
-                public_url = supabase.storage.from_(bucket_name).get_public_url(path)
+                # Upload to storage bucket using FileOptions
+                supabase.storage.from_(bucket_name).upload(
+                    path,
+                    content,
+                    FileOptions(content_type=mime, upsert=True)
+                )
+                public_url_resp = supabase.storage.from_(bucket_name).get_public_url(path)
+                public_url = (
+                    public_url_resp.get('publicURL')
+                    if isinstance(public_url_resp, dict)
+                    else public_url_resp
+                )
 
                 # Store the URL in links column as a fallback
                 link_update = supabase.table('e_portfolio').update({'artefacts_evidence_links_texts': public_url}).eq('id', item_id).execute()
