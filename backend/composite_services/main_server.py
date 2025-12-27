@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from supabase import create_client, Client
-from supabase.storage import FileOptions
+from storage3.types import FileOptions
 from functools import wraps
 from dotenv import load_dotenv
 import os
