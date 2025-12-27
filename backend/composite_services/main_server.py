@@ -626,7 +626,7 @@ def upload_e_portfolio_file(item_id):
                 # Ensure bucket exists; create if not
                 bucket_created = False
                 try:
-                    result = supabase.storage.create_bucket(bucket_name, public=True)
+                    result = supabase.storage.create_bucket(bucket_name)
                     bucket_created = True
                 except Exception as create_err:
                     err_str = str(create_err)
