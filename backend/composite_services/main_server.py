@@ -663,6 +663,130 @@ def upload_e_portfolio_file(item_id):
         # Provide clearer server-side error context
         return jsonify({'error': f'Upload failed: {str(e)}'}), 500
 
+# Upload multiple evidence files for e-portfolio (stores URLs as JSON array)
+@app.route('/api/e-portfolio/<int:item_id>/evidence', methods=['POST', 'OPTIONS'])
+@require_auth
+def upload_evidence_files(item_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        MAX_BYTES = 10 * 1024 * 1024
+        uploaded = request.files.get('file') if request.files else None
+        
+        if not uploaded:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        content = uploaded.read() or b''
+        if len(content) > MAX_BYTES:
+            return jsonify({'error': 'File too large (max 10 MB)'}), 413
+        
+        bucket_name = 'eportfolio-evidence'
+        
+        # Ensure bucket exists
+        try:
+            supabase.storage.create_bucket(bucket_name)
+        except Exception as create_err:
+            err_str = str(create_err)
+            if '409' not in err_str and 'already exists' not in err_str.lower():
+                raise create_err
+        
+        # Generate unique filename with timestamp
+        import time
+        timestamp = int(time.time() * 1000)
+        filename = f"{item_id}/{timestamp}_{uploaded.filename or 'evidence'}"
+        mime = uploaded.mimetype or 'application/octet-stream'
+        
+        # Upload to storage
+        supabase.storage.from_(bucket_name).upload(
+            filename,
+            content,
+            {'contentType': mime}
+        )
+        
+        # Get public URL
+        public_url_resp = supabase.storage.from_(bucket_name).get_public_url(filename)
+        public_url = (
+            public_url_resp.get('publicURL')
+            if isinstance(public_url_resp, dict)
+            else public_url_resp
+        )
+        
+        return jsonify({
+            'message': 'Evidence file uploaded',
+            'url': public_url,
+            'filename': uploaded.filename,
+            'size_bytes': len(content)
+        }), 200
+    except Exception as e:
+        return jsonify({'error': f'Evidence upload failed: {str(e)}'}), 500
+
+# Upload organization logo for education or work experience
+@app.route('/api/<string:entity_type>/<int:item_id>/org-logo', methods=['POST', 'OPTIONS'])
+@require_auth
+def upload_org_logo(entity_type, item_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        # entity_type should be 'education' or 'work_experience'
+        if entity_type not in ['education', 'work_experience']:
+            return jsonify({'error': 'Invalid entity type'}), 400
+        
+        MAX_BYTES = 5 * 1024 * 1024  # 5 MB for logos
+        uploaded = request.files.get('file') if request.files else None
+        
+        if not uploaded:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        content = uploaded.read() or b''
+        if len(content) > MAX_BYTES:
+            return jsonify({'error': 'File too large (max 5 MB)'}), 413
+        
+        bucket_name = 'org-logos'
+        
+        # Ensure bucket exists
+        try:
+            supabase.storage.create_bucket(bucket_name)
+        except Exception as create_err:
+            err_str = str(create_err)
+            if '409' not in err_str and 'already exists' not in err_str.lower():
+                raise create_err
+        
+        # Generate unique filename
+        import time
+        timestamp = int(time.time() * 1000)
+        filename = f"{entity_type}/{item_id}/{timestamp}_{uploaded.filename or 'logo'}"
+        mime = uploaded.mimetype or 'application/octet-stream'
+        
+        # Upload to storage
+        supabase.storage.from_(bucket_name).upload(
+            filename,
+            content,
+            {'contentType': mime}
+        )
+        
+        # Get public URL
+        public_url_resp = supabase.storage.from_(bucket_name).get_public_url(filename)
+        public_url = (
+            public_url_resp.get('publicURL')
+            if isinstance(public_url_resp, dict)
+            else public_url_resp
+        )
+        
+        # Update the entity with org_logo_url
+        logo_field = 'org_logo_url'
+        update_data = {logo_field: public_url}
+        response = supabase.table(entity_type).update(update_data).eq('id', item_id).execute()
+        
+        if response.data:
+            return jsonify({
+                'message': f'{entity_type} logo uploaded',
+                'url': public_url,
+                'size_bytes': len(content)
+            }), 200
+        return jsonify({'error': f'{entity_type} record not found'}), 404
+    except Exception as e:
+        return jsonify({'error': f'Logo upload failed: {str(e)}'}), 500
+
 # Proficiency levels endpoint (for Skills dropdown)
 @app.route('/api/prof-levels', methods=['GET'])
 def get_prof_levels():

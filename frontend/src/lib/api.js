@@ -137,6 +137,50 @@ export async function uploadEPortfolioFile(id, file){
 export async function clearEPortfolioFile(id){
   const form = new FormData()
   form.append('clear','true')
+
+  // Upload multiple evidence files for e-portfolio
+  export async function uploadEvidenceFile(itemId, file){
+    const form = new FormData()
+    form.append('file', file)
+    const res = await fetch(`${API_URL}/api/e-portfolio/${itemId}/evidence`,{
+      method:'POST',
+      headers:{ ...authHeader() },
+      body: form
+    })
+    if(!res.ok){
+      let msg = `Request failed (${res.status})`
+      try{
+        const data = await res.json()
+        msg = data?.error || msg
+      }catch{
+        try{ msg = await res.text() }catch{}
+      }
+      throw new Error(msg)
+    }
+    return await res.json()
+  }
+
+  // Upload organization logo for education or work
+  export async function uploadOrgLogo(entityType, itemId, file){
+    const form = new FormData()
+    form.append('file', file)
+    const res = await fetch(`${API_URL}/api/${entityType}/${itemId}/org-logo`,{
+      method:'POST',
+      headers:{ ...authHeader() },
+      body: form
+    })
+    if(!res.ok){
+      let msg = `Request failed (${res.status})`
+      try{
+        const data = await res.json()
+        msg = data?.error || msg
+      }catch{
+        try{ msg = await res.text() }catch{}
+      }
+      throw new Error(msg)
+    }
+    return await res.json()
+  }
   const res = await fetch(`${API_URL}/api/e-portfolio/${id}/upload`,{
     method:'POST',
     headers:{ ...authHeader() },
