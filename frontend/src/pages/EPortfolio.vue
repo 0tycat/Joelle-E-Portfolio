@@ -27,10 +27,14 @@
           <p v-if="item.artefacts_evidence_links_texts" style="white-space:pre-wrap; margin-top:8px"><strong>Evidence/Links:</strong><br/>{{ item.artefacts_evidence_links_texts }}</p>
           <p v-if="item.relevance_career" style="white-space:pre-wrap; margin-top:8px"><strong>Relevance to Career:</strong><br/>{{ item.relevance_career }}</p>
           <div v-if="getEvidenceLink(item)" style="margin-top:8px">
-            <div style="font-size:0.85em; color:#6b7280">Evidence preview</div>
+            <div style="font-size:0.85em; color:#6b7280">Evidence</div>
             <div style="margin-top:4px; display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid #e5e7eb; border-radius:6px; background:#f9fafb">
               <i class="fas fa-file"></i>
-              <a :href="getEvidenceLink(item)" target="_blank" rel="noopener" style="color:#2563eb; text-decoration:underline">Open evidence</a>
+              <a :href="getEvidenceLink(item)" target="_blank" rel="noopener" style="color:#2563eb; text-decoration:underline">Open</a>
+              <span style="color:#d1d5db">|</span>
+              <button @click="downloadEvidence(item)" style="background:none; border:none; color:#2563eb; text-decoration:underline; cursor:pointer; padding:0; font-size:inherit" title="Download evidence file">
+                <i class="fas fa-download"></i> Download
+              </button>
             </div>
           </div>
           <div v-if="isAuthed" class="card-actions">
@@ -280,6 +284,22 @@ function getEvidenceLink(p){
   if(!trimmed) return null
   if(trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed
   return null
+}
+
+function downloadEvidence(item){
+  const url = getEvidenceLink(item)
+  if(!url) return
+  // Extract filename from URL or use a default
+  const urlParts = url.split('/')
+  const fileName = urlParts[urlParts.length - 1].split('?')[0] || 'evidence'
+  // Create a temporary link and click it to trigger download
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  link.target = '_blank'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
 }
 
 // Upload occurs as part of Save in add/edit flows
