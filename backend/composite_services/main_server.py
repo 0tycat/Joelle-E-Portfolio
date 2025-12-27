@@ -622,28 +622,26 @@ def upload_e_portfolio_file(item_id):
 
             try:
                 bucket_name = 'eportfolio-evidence'
-                # Ensure bucket exists (ignore if already present)
+                
+                # Attempt to create bucket if it doesn't exist (safe to call multiple times)
                 try:
-                    buckets = supabase.storage.list_buckets()
-                    bucket_names = [b.get('name') or b.get('id') for b in (buckets or [])]
-                    if bucket_name not in bucket_names:
-                        supabase.storage.create_bucket(bucket_name, public=True)
-                except Exception:
-                    # If listing fails, attempt to create and ignore errors
-                    try:
-                        supabase.storage.create_bucket(bucket_name, public=True)
-                    except Exception:
+                    supabase.storage.create_bucket(bucket_name, public=True)
+                except Exception as create_err:
+                    # Bucket may already exist; continue if 409 (conflict) or if name matches
+                    if '409' not in str(create_err) and 'already exists' not in str(create_err):
                         pass
 
                 path = f"{item_id}/{uploaded.filename or 'evidence'}"
                 mime = uploaded.mimetype or 'application/octet-stream'
 
-                # Upload to storage bucket (pass content_type as a dict)
+                # Upload to storage bucket with upsert=true to overwrite if exists
                 supabase.storage.from_(bucket_name).upload(
                     path,
                     content,
-                    {'content_type': mime}
+                    file_options={'contentType': mime, 'upsert': True}
                 )
+                
+                # Get public URL
                 public_url_resp = supabase.storage.from_(bucket_name).get_public_url(path)
                 public_url = (
                     public_url_resp.get('publicURL')
