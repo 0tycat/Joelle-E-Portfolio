@@ -623,13 +623,16 @@ def upload_e_portfolio_file(item_id):
             try:
                 bucket_name = 'eportfolio-evidence'
                 
-                # Attempt to create bucket if it doesn't exist (safe to call multiple times)
+                # Ensure bucket exists; create if not
+                bucket_created = False
                 try:
-                    supabase.storage.create_bucket(bucket_name, public=True)
+                    result = supabase.storage.create_bucket(bucket_name, public=True)
+                    bucket_created = True
                 except Exception as create_err:
-                    # Bucket may already exist; continue if 409 (conflict) or if name matches
-                    if '409' not in str(create_err) and 'already exists' not in str(create_err):
-                        pass
+                    err_str = str(create_err)
+                    # If 409 or "already exists", bucket is there; otherwise re-raise
+                    if '409' not in err_str and 'already exists' not in err_str.lower():
+                        raise create_err
 
                 path = f"{item_id}/{uploaded.filename or 'evidence'}"
                 mime = uploaded.mimetype or 'application/octet-stream'
