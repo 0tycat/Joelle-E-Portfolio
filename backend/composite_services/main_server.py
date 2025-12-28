@@ -815,11 +815,20 @@ def upload_e_portfolio_file(item_id):
         MAX_BYTES = 10 * 1024 * 1024
         # Allow clearing existing file with clear=true and no file
         clear_flag = request.form.get('clear')
-        uploaded_files = request.files.getlist('files') if request.files else []
-        
-        # Also check for single file upload (backward compatibility)
-        if not uploaded_files and 'file' in request.files:
-            uploaded_files = [request.files['file']]
+
+        # Collect files from the common field names used by browsers/clients
+        uploaded_files = []
+        if request.files:
+            # files (array)
+            uploaded_files.extend(request.files.getlist('files'))
+            uploaded_files.extend(request.files.getlist('files[]'))
+            # file (single)
+            single_file = request.files.get('file')
+            if single_file:
+                uploaded_files.append(single_file)
+            # Fallback: if above are empty, grab any remaining files
+            if not uploaded_files:
+                uploaded_files.extend(list(request.files.values()))
 
         if clear_flag and clear_flag.lower() == 'true':
             response = supabase.table('e_portfolio').update({'artefacts_evidence_files': None}).eq('id', item_id).execute()

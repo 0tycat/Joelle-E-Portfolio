@@ -15,14 +15,21 @@
         </slot>
       </div>
       <div v-else class="dz-selected">
-        <div v-if="!multiple">
+        <div v-if="!multiple" class="dz-file-single">
           <i class="fas fa-file"></i>
           <span class="name">{{ selectedFiles[0].name }}</span>
+          <span class="meta">{{ formatSize(selectedFiles[0].size) }}</span>
         </div>
         <div v-else class="dz-file-list">
           <div v-for="(file, index) in selectedFiles" :key="index" class="dz-file-item">
-            <i class="fas fa-file"></i>
-            <span class="name">{{ file.name }}</span>
+            <div class="dz-file-main">
+              <i class="fas fa-file"></i>
+              <span class="name">{{ file.name }}</span>
+              <span class="meta">{{ formatSize(file.size) }}</span>
+            </div>
+            <button class="btn-icon danger" title="Remove" @click.stop="removeFile(index)">
+              <i class="fas fa-times"></i>
+            </button>
           </div>
         </div>
         <button class="btn-icon danger" title="Clear" @click.stop="clear">
@@ -78,6 +85,23 @@ function clear() {
   if (fileInput.value) fileInput.value.value = ''
   emit('cleared')
 }
+
+function removeFile(index){
+  if(index < 0 || index >= selectedFiles.value.length) return
+  selectedFiles.value.splice(index, 1)
+  emit('selected', props.multiple ? [...selectedFiles.value] : selectedFiles.value[0] || null)
+  if(selectedFiles.value.length === 0 && fileInput.value){
+    fileInput.value.value = ''
+    emit('cleared')
+  }
+}
+
+function formatSize(bytes){
+  if(!bytes && bytes !== 0) return ''
+  const kb = bytes / 1024
+  if(kb < 1024) return `${kb.toFixed(1)} KB`
+  return `${(kb/1024).toFixed(2)} MB`
+}
 </script>
 
 <style scoped>
@@ -104,6 +128,12 @@ function clear() {
   gap: 8px;
   width: 100%;
 }
+.dz-file-single {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
 .dz-file-list {
   flex: 1;
   display: flex;
@@ -113,12 +143,23 @@ function clear() {
 .dz-file-item {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 6px;
   font-size: 0.9em;
+  padding: 6px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+}
+.dz-file-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .dz-selected .name {
   color: #374151;
 }
+.meta { color:#6b7280; font-size:0.85em; }
 .link { color: #2563eb; text-decoration: underline; }
 .btn-icon { border:none; background:transparent; cursor:pointer; }
 .btn-icon.danger { color:#ef4444; }
