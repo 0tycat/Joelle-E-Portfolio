@@ -283,6 +283,72 @@ def delete_education(edu_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Upload organization logo for education
+@app.route('/api/education/<int:edu_id>/logo', methods=['POST', 'OPTIONS'])
+@require_auth
+def upload_education_logo(edu_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        MAX_BYTES = 2 * 1024 * 1024  # 2 MB for logos
+        clear_flag = request.form.get('clear')
+        uploaded = request.files.get('logo') if request.files else None
+
+        if clear_flag and clear_flag.lower() == 'true':
+            response = supabase.table('education').update({'organization_logo': None}).eq('id', edu_id).execute()
+            if response.data:
+                return jsonify({'message': 'Logo cleared'}), 200
+            return jsonify({'error': 'Education not found'}), 404
+
+        if not uploaded:
+            return jsonify({'error': 'No logo file provided'}), 400
+
+        content = uploaded.read() or b''
+        if len(content) > MAX_BYTES:
+            return jsonify({'error': 'Logo too large (max 2 MB)'}), 413
+        
+        hex_value = '\\\\x' + content.hex()
+        response = supabase.table('education').update({'organization_logo': hex_value}).eq('id', edu_id).execute()
+        if response.data:
+            return jsonify({'message': 'Logo uploaded', 'size_bytes': len(content)}), 200
+        return jsonify({'error': 'Education not found'}), 404
+    except Exception as e:
+        return jsonify({'error': f'Logo upload failed: {str(e)}'}), 500
+
+# Download education organization logo
+@app.route('/api/education/<int:edu_id>/logo', methods=['GET'])
+def get_education_logo(edu_id):
+    try:
+        from flask import send_file
+        import io
+        
+        response = supabase.table('education').select('organization_logo').eq('id', edu_id).execute()
+        if not response.data:
+            return jsonify({'error': 'Education not found'}), 404
+        
+        logo_data = response.data[0].get('organization_logo')
+        if not logo_data:
+            return jsonify({'error': 'No logo found'}), 404
+        
+        hex_str = logo_data
+        if hex_str.startswith('\\\\x'):
+            hex_str = hex_str[2:]
+        
+        file_bytes = bytes.fromhex(hex_str)
+        
+        # Detect image type
+        mimetype = 'image/png'
+        if file_bytes.startswith(b'\\xff\\xd8\\xff'):
+            mimetype = 'image/jpeg'
+        elif file_bytes.startswith(b'GIF'):
+            mimetype = 'image/gif'
+        elif file_bytes.startswith(b'<svg'):
+            mimetype = 'image/svg+xml'
+        
+        return send_file(io.BytesIO(file_bytes), mimetype=mimetype)
+    except Exception as e:
+        return jsonify({'error': f'Logo retrieval failed: {str(e)}'}), 500
+
 # Work experience endpoint
 @app.route('/api/work', methods=['GET'])
 def get_work():
@@ -350,6 +416,72 @@ def delete_work(work_id):
         return jsonify({'error': 'Work experience not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# Upload organization logo for work experience
+@app.route('/api/work/<int:work_id>/logo', methods=['POST', 'OPTIONS'])
+@require_auth
+def upload_work_logo(work_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        MAX_BYTES = 2 * 1024 * 1024  # 2 MB for logos
+        clear_flag = request.form.get('clear')
+        uploaded = request.files.get('logo') if request.files else None
+
+        if clear_flag and clear_flag.lower() == 'true':
+            response = supabase.table('work_experience').update({'organization_logo': None}).eq('id', work_id).execute()
+            if response.data:
+                return jsonify({'message': 'Logo cleared'}), 200
+            return jsonify({'error': 'Work experience not found'}), 404
+
+        if not uploaded:
+            return jsonify({'error': 'No logo file provided'}), 400
+
+        content = uploaded.read() or b''
+        if len(content) > MAX_BYTES:
+            return jsonify({'error': 'Logo too large (max 2 MB)'}), 413
+        
+        hex_value = '\\\\x' + content.hex()
+        response = supabase.table('work_experience').update({'organization_logo': hex_value}).eq('id', work_id).execute()
+        if response.data:
+            return jsonify({'message': 'Logo uploaded', 'size_bytes': len(content)}), 200
+        return jsonify({'error': 'Work experience not found'}), 404
+    except Exception as e:
+        return jsonify({'error': f'Logo upload failed: {str(e)}'}), 500
+
+# Download work organization logo
+@app.route('/api/work/<int:work_id>/logo', methods=['GET'])
+def get_work_logo(work_id):
+    try:
+        from flask import send_file
+        import io
+        
+        response = supabase.table('work_experience').select('organization_logo').eq('id', work_id).execute()
+        if not response.data:
+            return jsonify({'error': 'Work experience not found'}), 404
+        
+        logo_data = response.data[0].get('organization_logo')
+        if not logo_data:
+            return jsonify({'error': 'No logo found'}), 404
+        
+        hex_str = logo_data
+        if hex_str.startswith('\\\\x'):
+            hex_str = hex_str[2:]
+        
+        file_bytes = bytes.fromhex(hex_str)
+        
+        # Detect image type
+        mimetype = 'image/png'
+        if file_bytes.startswith(b'\\xff\\xd8\\xff'):
+            mimetype = 'image/jpeg'
+        elif file_bytes.startswith(b'GIF'):
+            mimetype = 'image/gif'
+        elif file_bytes.startswith(b'<svg'):
+            mimetype = 'image/svg+xml'
+        
+        return send_file(io.BytesIO(file_bytes), mimetype=mimetype)
+    except Exception as e:
+        return jsonify({'error': f'Logo retrieval failed: {str(e)}'}), 500
 
 # Community service endpoint
 @app.route('/api/community', methods=['GET'])
@@ -582,6 +714,96 @@ def delete_e_portfolio(item_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Download e-portfolio evidence file
+@app.route('/api/e-portfolio/<int:item_id>/download/<int:file_index>', methods=['GET'])
+def download_e_portfolio_file(item_id, file_index=0):
+    try:
+        from flask import send_file
+        import io
+        
+        response = supabase.table('e_portfolio').select('artefacts_evidence_files').eq('id', item_id).execute()
+        if not response.data:
+            return jsonify({'error': 'E-portfolio activity not found'}), 404
+        
+        files_data = response.data[0].get('artefacts_evidence_files')
+        if not files_data:
+            return jsonify({'error': 'No evidence files found'}), 404
+        
+        # Handle both single file (string) and multiple files (array)
+        if isinstance(files_data, str):
+            files_list = [files_data]
+        elif isinstance(files_data, list):
+            files_list = files_data
+        else:
+            return jsonify({'error': 'Invalid file data format'}), 500
+        
+        if file_index >= len(files_list):
+            return jsonify({'error': 'File index out of range'}), 404
+        
+        hex_str = files_list[file_index]
+        if hex_str.startswith('\\x'):
+            hex_str = hex_str[2:]
+        
+        file_bytes = bytes.fromhex(hex_str)
+        return send_file(
+            io.BytesIO(file_bytes),
+            as_attachment=True,
+            download_name=f'evidence_{item_id}_{file_index}',
+            mimetype='application/octet-stream'
+        )
+    except Exception as e:
+        return jsonify({'error': f'Download failed: {str(e)}'}), 500
+
+# Preview e-portfolio evidence file
+@app.route('/api/e-portfolio/<int:item_id>/preview/<int:file_index>', methods=['GET'])
+def preview_e_portfolio_file(item_id, file_index=0):
+    try:
+        from flask import send_file
+        import io
+        
+        response = supabase.table('e_portfolio').select('artefacts_evidence_files').eq('id', item_id).execute()
+        if not response.data:
+            return jsonify({'error': 'E-portfolio activity not found'}), 404
+        
+        files_data = response.data[0].get('artefacts_evidence_files')
+        if not files_data:
+            return jsonify({'error': 'No evidence files found'}), 404
+        
+        # Handle both single file (string) and multiple files (array)
+        if isinstance(files_data, str):
+            files_list = [files_data]
+        elif isinstance(files_data, list):
+            files_list = files_data
+        else:
+            return jsonify({'error': 'Invalid file data format'}), 500
+        
+        if file_index >= len(files_list):
+            return jsonify({'error': 'File index out of range'}), 404
+        
+        hex_str = files_list[file_index]
+        if hex_str.startswith('\\x'):
+            hex_str = hex_str[2:]
+        
+        file_bytes = bytes.fromhex(hex_str)
+        
+        # Try to detect mime type based on file signature
+        mimetype = 'application/octet-stream'
+        if file_bytes.startswith(b'%PDF'):
+            mimetype = 'application/pdf'
+        elif file_bytes.startswith(b'\x89PNG'):
+            mimetype = 'image/png'
+        elif file_bytes.startswith(b'\xff\xd8\xff'):
+            mimetype = 'image/jpeg'
+        elif file_bytes.startswith(b'GIF'):
+            mimetype = 'image/gif'
+        
+        return send_file(
+            io.BytesIO(file_bytes),
+            mimetype=mimetype
+        )
+    except Exception as e:
+        return jsonify({'error': f'Preview failed: {str(e)}'}), 500
+
 # Upload artefact file (stores as hex string in artefacts_evidence_files)
 @app.route('/api/e-portfolio/<int:item_id>/upload', methods=['POST', 'OPTIONS'])
 @require_auth
@@ -589,203 +811,50 @@ def upload_e_portfolio_file(item_id):
     if request.method == 'OPTIONS':
         return '', 204
     try:
-        # Optional max size guard (10 MB)
+        # Optional max size guard (10 MB per file)
         MAX_BYTES = 10 * 1024 * 1024
         # Allow clearing existing file with clear=true and no file
         clear_flag = request.form.get('clear')
-        uploaded = request.files.get('file') if request.files else None
+        uploaded_files = request.files.getlist('files') if request.files else []
+        
+        # Also check for single file upload (backward compatibility)
+        if not uploaded_files and 'file' in request.files:
+            uploaded_files = [request.files['file']]
 
         if clear_flag and clear_flag.lower() == 'true':
-            response = supabase.table('e_portfolio').update({'artefacts_evidence_files': None, 'artefacts_evidence_links_texts': None}).eq('id', item_id).execute()
+            response = supabase.table('e_portfolio').update({'artefacts_evidence_files': None}).eq('id', item_id).execute()
             if response.data:
-                return jsonify({'message': 'File cleared'}), 200
+                return jsonify({'message': 'Files cleared'}), 200
             return jsonify({'error': 'E-portfolio activity not found'}), 404
 
-        if not uploaded:
-            return jsonify({'error': 'No file provided'}), 400
+        if not uploaded_files:
+            return jsonify({'error': 'No files provided'}), 400
 
-        content = uploaded.read() or b''
-        if len(content) > MAX_BYTES:
-            return jsonify({'error': 'File too large (max 10 MB)'}), 413
-        hex_value = '\\x' + content.hex()
+        hex_values = []
+        total_size = 0
+        
+        for uploaded in uploaded_files:
+            content = uploaded.read() or b''
+            if len(content) > MAX_BYTES:
+                return jsonify({'error': f'File {uploaded.filename} too large (max 10 MB per file)'}), 413
+            total_size += len(content)
+            hex_value = '\\x' + content.hex()
+            hex_values.append(hex_value)
+        
+        # Store as array if multiple files, single string if one file
+        store_value = hex_values if len(hex_values) > 1 else hex_values[0]
 
-        try:
-            response = supabase.table('e_portfolio').update({'artefacts_evidence_files': hex_value}).eq('id', item_id).execute()
-            if response.data:
-                return jsonify({'message': 'File uploaded', 'size_bytes': len(content)}), 200
-            return jsonify({'error': 'E-portfolio activity not found'}), 404
-        except Exception as update_err:
-            # Fallback path for PostgREST schema cache miss (PGRST204)
-            err_msg = str(update_err)
-            if 'PGRST204' not in err_msg and 'schema cache' not in err_msg:
-                return jsonify({'error': f'Upload failed: {err_msg}'}), 500
-
-            try:
-                bucket_name = 'eportfolio-evidence'
-                
-                # Ensure bucket exists; create if not
-                bucket_created = False
-                try:
-                    result = supabase.storage.create_bucket(bucket_name)
-                    bucket_created = True
-                except Exception as create_err:
-                    err_str = str(create_err)
-                    # If 409 or "already exists", bucket is there; otherwise re-raise
-                    if '409' not in err_str and 'already exists' not in err_str.lower():
-                        raise create_err
-
-                path = f"{item_id}/{uploaded.filename or 'evidence'}"
-                mime = uploaded.mimetype or 'application/octet-stream'
-
-                # Upload to storage bucket
-                supabase.storage.from_(bucket_name).upload(
-                    path,
-                    content,
-                    {'contentType': mime}
-                )
-                
-                # Get public URL
-                public_url_resp = supabase.storage.from_(bucket_name).get_public_url(path)
-                public_url = (
-                    public_url_resp.get('publicURL')
-                    if isinstance(public_url_resp, dict)
-                    else public_url_resp
-                )
-
-                # Store the URL in links column as a fallback
-                link_update = supabase.table('e_portfolio').update({'artefacts_evidence_links_texts': public_url}).eq('id', item_id).execute()
-                if link_update.data:
-                    return jsonify({'message': 'File stored in bucket (schema cache fallback)', 'storage_url': public_url, 'size_bytes': len(content)}), 200
-                return jsonify({'error': 'E-portfolio activity not found'}), 404
-            except Exception as fallback_err:
-                return jsonify({'error': f'Upload fallback failed: {str(fallback_err)}'}), 500
+        response = supabase.table('e_portfolio').update({'artefacts_evidence_files': store_value}).eq('id', item_id).execute()
+        if response.data:
+            return jsonify({
+                'message': f'{len(hex_values)} file(s) uploaded', 
+                'file_count': len(hex_values),
+                'total_size_bytes': total_size
+            }), 200
+        return jsonify({'error': 'E-portfolio activity not found'}), 404
     except Exception as e:
         # Provide clearer server-side error context
         return jsonify({'error': f'Upload failed: {str(e)}'}), 500
-
-# Upload multiple evidence files for e-portfolio (stores URLs as JSON array)
-@app.route('/api/e-portfolio/<int:item_id>/evidence', methods=['POST', 'OPTIONS'])
-@require_auth
-def upload_evidence_files(item_id):
-    if request.method == 'OPTIONS':
-        return '', 204
-    try:
-        MAX_BYTES = 10 * 1024 * 1024
-        uploaded = request.files.get('file') if request.files else None
-        
-        if not uploaded:
-            return jsonify({'error': 'No file provided'}), 400
-        
-        content = uploaded.read() or b''
-        if len(content) > MAX_BYTES:
-            return jsonify({'error': 'File too large (max 10 MB)'}), 413
-        
-        bucket_name = 'eportfolio-evidence'
-        
-        # Ensure bucket exists
-        try:
-            supabase.storage.create_bucket(bucket_name)
-        except Exception as create_err:
-            err_str = str(create_err)
-            if '409' not in err_str and 'already exists' not in err_str.lower():
-                raise create_err
-        
-        # Generate unique filename with timestamp
-        import time
-        timestamp = int(time.time() * 1000)
-        filename = f"{item_id}/{timestamp}_{uploaded.filename or 'evidence'}"
-        mime = uploaded.mimetype or 'application/octet-stream'
-        
-        # Upload to storage
-        supabase.storage.from_(bucket_name).upload(
-            filename,
-            content,
-            {'contentType': mime}
-        )
-        
-        # Get public URL
-        public_url_resp = supabase.storage.from_(bucket_name).get_public_url(filename)
-        public_url = (
-            public_url_resp.get('publicURL')
-            if isinstance(public_url_resp, dict)
-            else public_url_resp
-        )
-        
-        return jsonify({
-            'message': 'Evidence file uploaded',
-            'url': public_url,
-            'filename': uploaded.filename,
-            'size_bytes': len(content)
-        }), 200
-    except Exception as e:
-        return jsonify({'error': f'Evidence upload failed: {str(e)}'}), 500
-
-# Upload organization logo for education or work experience
-@app.route('/api/<string:entity_type>/<int:item_id>/org-logo', methods=['POST', 'OPTIONS'])
-@require_auth
-def upload_org_logo(entity_type, item_id):
-    if request.method == 'OPTIONS':
-        return '', 204
-    try:
-        # entity_type should be 'education' or 'work_experience'
-        if entity_type not in ['education', 'work_experience']:
-            return jsonify({'error': 'Invalid entity type'}), 400
-        
-        MAX_BYTES = 5 * 1024 * 1024  # 5 MB for logos
-        uploaded = request.files.get('file') if request.files else None
-        
-        if not uploaded:
-            return jsonify({'error': 'No file provided'}), 400
-        
-        content = uploaded.read() or b''
-        if len(content) > MAX_BYTES:
-            return jsonify({'error': 'File too large (max 5 MB)'}), 413
-        
-        bucket_name = 'org-logos'
-        
-        # Ensure bucket exists
-        try:
-            supabase.storage.create_bucket(bucket_name)
-        except Exception as create_err:
-            err_str = str(create_err)
-            if '409' not in err_str and 'already exists' not in err_str.lower():
-                raise create_err
-        
-        # Generate unique filename
-        import time
-        timestamp = int(time.time() * 1000)
-        filename = f"{entity_type}/{item_id}/{timestamp}_{uploaded.filename or 'logo'}"
-        mime = uploaded.mimetype or 'application/octet-stream'
-        
-        # Upload to storage
-        supabase.storage.from_(bucket_name).upload(
-            filename,
-            content,
-            {'contentType': mime}
-        )
-        
-        # Get public URL
-        public_url_resp = supabase.storage.from_(bucket_name).get_public_url(filename)
-        public_url = (
-            public_url_resp.get('publicURL')
-            if isinstance(public_url_resp, dict)
-            else public_url_resp
-        )
-        
-        # Update the entity with org_logo_url
-        logo_field = 'org_logo_url'
-        update_data = {logo_field: public_url}
-        response = supabase.table(entity_type).update(update_data).eq('id', item_id).execute()
-        
-        if response.data:
-            return jsonify({
-                'message': f'{entity_type} logo uploaded',
-                'url': public_url,
-                'size_bytes': len(content)
-            }), 200
-        return jsonify({'error': f'{entity_type} record not found'}), 404
-    except Exception as e:
-        return jsonify({'error': f'Logo upload failed: {str(e)}'}), 500
 
 # Proficiency levels endpoint (for Skills dropdown)
 @app.route('/api/prof-levels', methods=['GET'])

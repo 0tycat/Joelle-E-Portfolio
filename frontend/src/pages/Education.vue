@@ -34,9 +34,14 @@
     <div v-if="loading">Loading...</div>
     <div v-else>
       <div v-for="e in filteredAndSorted" :key="e.id" class="card">
-        <strong>{{ e.institute_name }}</strong>
-        <div>{{ e.certification }}</div>
-        <div>{{ formatDate(e.start_date) }} - {{ e.finish_date ? formatDate(e.finish_date) : 'Present' }}</div>
+        <div style="display:flex; gap:12px; align-items:start">
+          <img v-if="e.organization_logo" :src="getLogoUrl('education', e.id)" alt="Logo" style="width:48px; height:48px; object-fit:contain; border-radius:4px" />
+          <div style="flex:1">
+            <strong>{{ e.institute_name }}</strong>
+            <div>{{ e.certification }}</div>
+            <div>{{ formatDate(e.start_date) }} - {{ e.finish_date ? formatDate(e.finish_date) : 'Present' }}</div>
+          </div>
+        </div>
         <div v-if="isAuthed" class="card-actions">
           <button class="btn-icon secondary" @click="startEdit(e)" title="Edit"><i class="fas fa-edit"></i></button>
           <button class="btn-icon danger" @click="askRemoveEducation(e)" title="Delete"><i class="fas fa-trash"></i></button>
@@ -46,26 +51,50 @@
 
     <!-- Add Modal -->
     <Modal :open="showAdd" title="Add Education" @close="closeAdd">
-      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+      <div style="display:flex; gap:8px; flex-direction:column">
         <input class="input" v-model="newItem.institute_name" placeholder="Institute" />
         <input class="input" v-model="newItem.certification" placeholder="Certification" />
         <DatePicker v-model="newItem.start_date" placeholder="Start (YYYY-MM-DD)" />
         <DatePicker v-model="newItem.finish_date" placeholder="Finish (YYYY-MM-DD)" />
-        <button class="btn" @click="addEducation"><i class="fas fa-save"></i> Save</button>
-        <button class="btn secondary" @click="closeAdd"><i class="fas fa-times"></i> Cancel</button>
+        <label style="font-weight:600">Organization Logo (optional)</label>
+        <FileDropzone
+          accept="image/*"
+          @selected="onNewLogoSelected"
+          @cleared="onNewLogoCleared"
+        >
+          <template #label>
+            <span>Upload organization logo (PNG, JPG, SVG)</span>
+          </template>
+        </FileDropzone>
+        <div style="display:flex; gap:8px">
+          <button class="btn" @click="addEducation"><i class="fas fa-save"></i> Save</button>
+          <button class="btn secondary" @click="closeAdd"><i class="fas fa-times"></i> Cancel</button>
+        </div>
       </div>
       <p v-if="error" style="color:#fca5a5">{{ error }}</p>
     </Modal>
 
     <!-- Edit Modal -->
     <Modal :open="showEdit" title="Edit Education" @close="closeEdit">
-      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+      <div style="display:flex; gap:8px; flex-direction:column">
         <input class="input" v-model="editItem.institute_name" placeholder="Institute" />
         <input class="input" v-model="editItem.certification" placeholder="Certification" />
         <DatePicker v-model="editItem.start_date" placeholder="Start (YYYY-MM-DD)" />
         <DatePicker v-model="editItem.finish_date" placeholder="Finish (YYYY-MM-DD)" />
-        <button class="btn" @click="performEdit"><i class="fas fa-save"></i> Save</button>
-        <button class="btn secondary" @click="closeEdit"><i class="fas fa-times"></i> Cancel</button>
+        <label style="font-weight:600">Organization Logo (optional)</label>
+        <FileDropzone
+          accept="image/*"
+          @selected="onEditLogoSelected"
+          @cleared="onEditLogoCleared"
+        >
+          <template #label>
+            <span>Upload new logo to replace existing (leave empty to keep current)</span>
+          </template>
+        </FileDropzone>
+        <div style="display:flex; gap:8px">
+          <button class="btn" @click="performEdit"><i class="fas fa-save"></i> Save</button>
+          <button class="btn secondary" @click="closeEdit"><i class="fas fa-times"></i> Cancel</button>
+        </div>
       </div>
       <p v-if="error" style="color:#fca5a5">{{ error }}</p>
     </Modal>
@@ -83,11 +112,12 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { apiGet, postEducation, deleteEducation, putEducation } from '../lib/api.js'
+import { apiGet, postEducation, deleteEducation, putEducation, uploadEducationLogo } from '../lib/api.js'
 import { isAuthed as authIsAuthed } from '../lib/auth.js'
 import Modal from '../components/Modal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
 import DatePicker from '../components/DatePicker.vue'
+import FileDropzone from '../components/FileDropzone.vue'
 import { formatDate } from '../lib/date.js'
 
 const education = ref([])
@@ -100,6 +130,8 @@ const sortOpen = ref(false)
 const sortMode = ref('start-new')
 const newItem = ref({ institute_name:'', certification:'', start_date:'', finish_date:'' })
 const editItem = ref({ institute_name:'', certification:'', start_date:'', finish_date:'' })
+const newLogo = ref(null)
+const editLogo = ref(null)
 const showAdd = ref(false)
 const showEdit = ref(false)
 let editTargetId = null
@@ -107,6 +139,11 @@ const showConfirm = ref(false)
 let deleteTargetId = null
 const deleteItemLabel = ref('')
 const confirmMessage = computed(() => `Delete "${deleteItemLabel.value}"? This cannot be undone.`)
+
+function getLogoUrl(type, id) {
+  const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+  return `${API_URL}/api/${type}/${id}/logo`
+}
 
 async function refresh(){
   try{
@@ -168,8 +205,13 @@ const sortLabel = computed(() => {
 async function addEducation(){
   error.value = ''
   try{
-    await postEducation(newItem.value)
+    const created = await postEducation(newItem.value)
+    const createdId = created?.data?.[0]?.id
+    if (createdId && newLogo.value) {
+      await uploadEducationLogo(createdId, newLogo.value)
+    }
     newItem.value = { institute_name:'', certification:'', start_date:'', finish_date:'' }
+    newLogo.value = null
     await refresh()
     showAdd.value = false
   }catch(e){ error.value = 'Add failed' }
@@ -180,16 +222,32 @@ function startEdit(e){
   editTargetId = e.id
   showEdit.value = true
 }
-function closeAdd(){ showAdd.value = false }
-function closeEdit(){ showEdit.value = false; editTargetId = null }
+function closeAdd(){ 
+  showAdd.value = false
+  newLogo.value = null
+}
+function closeEdit(){ 
+  showEdit.value = false
+  editTargetId = null
+  editLogo.value = null
+}
 async function performEdit(){
   error.value = ''
   try{
     await putEducation(editTargetId, editItem.value)
+    if (editLogo.value) {
+      await uploadEducationLogo(editTargetId, editLogo.value)
+    }
+    editLogo.value = null
     closeEdit()
     await refresh()
   }catch(err){ error.value = 'Update failed' }
 }
+
+function onNewLogoSelected(file){ newLogo.value = file }
+function onNewLogoCleared(){ newLogo.value = null }
+function onEditLogoSelected(file){ editLogo.value = file }
+function onEditLogoCleared(){ editLogo.value = null }
 
 async function removeEducation(e){
   // replaced by askRemoveEducation

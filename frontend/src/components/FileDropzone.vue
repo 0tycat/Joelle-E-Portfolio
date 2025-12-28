@@ -9,14 +9,22 @@
     @click="openFilePicker"
   >
     <div class="dz-content">
-      <div v-if="!selectedFile">
+      <div v-if="selectedFiles.length === 0">
         <slot name="label">
-          <strong>Drag & drop</strong> a file here, or <span class="link">click to choose</span>.
+          <strong>Drag & drop</strong> {{ multiple ? 'files' : 'a file' }} here, or <span class="link">click to choose</span>.
         </slot>
       </div>
       <div v-else class="dz-selected">
-        <i class="fas fa-file"></i>
-        <span class="name">{{ selectedFile.name }}</span>
+        <div v-if="!multiple">
+          <i class="fas fa-file"></i>
+          <span class="name">{{ selectedFiles[0].name }}</span>
+        </div>
+        <div v-else class="dz-file-list">
+          <div v-for="(file, index) in selectedFiles" :key="index" class="dz-file-item">
+            <i class="fas fa-file"></i>
+            <span class="name">{{ file.name }}</span>
+          </div>
+        </div>
         <button class="btn-icon danger" title="Clear" @click.stop="clear">
           <i class="fas fa-times"></i>
         </button>
@@ -26,6 +34,7 @@
       ref="fileInput"
       type="file"
       :accept="accept"
+      :multiple="multiple"
       style="display:none"
       @change="onFileChange"
     />
@@ -36,35 +45,36 @@
 import { ref } from 'vue'
 
 const props = defineProps({
-  accept: { type: String, default: '' }
+  accept: { type: String, default: '' },
+  multiple: { type: Boolean, default: false }
 })
 const emit = defineEmits(['selected', 'cleared'])
 
 const fileInput = ref(null)
 const dragging = ref(false)
-const selectedFile = ref(null)
+const selectedFiles = ref([])
 
 function onDragOver() { dragging.value = true }
 function onDragEnter() { dragging.value = true }
 function onDragLeave() { dragging.value = false }
 function onDrop(e) {
   dragging.value = false
-  const f = e.dataTransfer?.files?.[0]
-  if (f) {
-    selectedFile.value = f
-    emit('selected', f)
+  const files = Array.from(e.dataTransfer?.files || [])
+  if (files.length > 0) {
+    selectedFiles.value = props.multiple ? files : [files[0]]
+    emit('selected', props.multiple ? selectedFiles.value : selectedFiles.value[0])
   }
 }
 function openFilePicker() { fileInput.value?.click() }
 function onFileChange(e) {
-  const f = e.target.files?.[0]
-  if (f) {
-    selectedFile.value = f
-    emit('selected', f)
+  const files = Array.from(e.target.files || [])
+  if (files.length > 0) {
+    selectedFiles.value = props.multiple ? files : [files[0]]
+    emit('selected', props.multiple ? selectedFiles.value : selectedFiles.value[0])
   }
 }
 function clear() {
-  selectedFile.value = null
+  selectedFiles.value = []
   if (fileInput.value) fileInput.value.value = ''
   emit('cleared')
 }
@@ -92,6 +102,19 @@ function clear() {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
+}
+.dz-file-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.dz-file-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9em;
 }
 .dz-selected .name {
   color: #374151;

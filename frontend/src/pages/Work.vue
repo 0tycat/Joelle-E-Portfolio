@@ -34,10 +34,15 @@
     <div v-if="loading">Loading...</div>
     <div v-else>
       <div v-for="w in filteredAndSorted" :key="w.id" class="card">
-        <strong>{{ w.company_name }}</strong>
-        <div>{{ w.role }}</div>
-        <div>{{ formatDate(w.start_date) }} - {{ w.end_date ? formatDate(w.end_date) : 'Present' }}</div>
-        <p style="white-space:pre-wrap">{{ w.description }}</p>
+        <div style="display:flex; gap:12px; align-items:start">
+          <img v-if="w.organization_logo" :src="getLogoUrl('work', w.id)" alt="Logo" style="width:48px; height:48px; object-fit:contain; border-radius:4px" />
+          <div style="flex:1">
+            <strong>{{ w.company_name }}</strong>
+            <div>{{ w.role }}</div>
+            <div>{{ formatDate(w.start_date) }} - {{ w.end_date ? formatDate(w.end_date) : 'Present' }}</div>
+            <p style="white-space:pre-wrap">{{ w.description }}</p>
+          </div>
+        </div>
         <div v-if="isAuthed" class="card-actions">
           <button class="btn-icon secondary" @click="startEdit(w)" title="Edit"><i class="fas fa-edit"></i></button>
           <button class="btn-icon danger" @click="askRemoveWork(w)" title="Delete"><i class="fas fa-trash"></i></button>
@@ -53,6 +58,16 @@
         <DatePicker v-model="newItem.start_date" placeholder="Start (YYYY-MM-DD)" />
         <DatePicker v-model="newItem.end_date" placeholder="End (YYYY-MM-DD)" />
         <textarea class="input" v-model="newItem.description" @keydown="handleDescriptionKeydown($event, newItem)" placeholder="Description (press Enter for new bullet)" rows="5" style="resize:vertical"></textarea>
+        <label style="font-weight:600">Organization Logo (optional)</label>
+        <FileDropzone
+          accept="image/*"
+          @selected="onNewLogoSelected"
+          @cleared="onNewLogoCleared"
+        >
+          <template #label>
+            <span>Upload organization logo (PNG, JPG, SVG)</span>
+          </template>
+        </FileDropzone>
         <div style="display:flex; gap:8px">
           <button class="btn" @click="addWork"><i class="fas fa-save"></i> Save</button>
           <button class="btn secondary" @click="closeAdd"><i class="fas fa-times"></i> Cancel</button>
@@ -69,6 +84,16 @@
         <DatePicker v-model="editItem.start_date" placeholder="Start (YYYY-MM-DD)" />
         <DatePicker v-model="editItem.end_date" placeholder="End (YYYY-MM-DD)" />
         <textarea class="input" v-model="editItem.description" @keydown="handleDescriptionKeydown($event, editItem)" placeholder="Description (press Enter for new bullet)" rows="5" style="resize:vertical"></textarea>
+        <label style="font-weight:600">Organization Logo (optional)</label>
+        <FileDropzone
+          accept="image/*"
+          @selected="onEditLogoSelected"
+          @cleared="onEditLogoCleared"
+        >
+          <template #label>
+            <span>Upload new logo to replace existing (leave empty to keep current)</span>
+          </template>
+        </FileDropzone>
         <div style="display:flex; gap:8px">
           <button class="btn" @click="performEdit"><i class="fas fa-save"></i> Save</button>
           <button class="btn secondary" @click="closeEdit"><i class="fas fa-times"></i> Cancel</button>
@@ -90,11 +115,12 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { apiGet, postWork, deleteWork, putWork } from '../lib/api.js'
+import { apiGet, postWork, deleteWork, putWork, uploadWorkLogo } from '../lib/api.js'
 import { isAuthed as authIsAuthed } from '../lib/auth.js'
 import Modal from '../components/Modal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
 import DatePicker from '../components/DatePicker.vue'
+import FileDropzone from '../components/FileDropzone.vue'
 import { formatDate } from '../lib/date.js'
 
 const work = ref([])
@@ -107,6 +133,8 @@ const sortOpen = ref(false)
 const sortMode = ref('start-new')
 const newItem = ref({ company_name:'', role:'', start_date:'', end_date:'', description:'' })
 const editItem = ref({ company_name:'', role:'', start_date:'', end_date:'', description:'' })
+const newLogo = ref(null)
+const editLogo = ref(null)
 const showAdd = ref(false)
 const showEdit = ref(false)
 let editTargetId = null
@@ -114,6 +142,11 @@ const showConfirm = ref(false)
 let deleteTargetId = null
 const deleteItemLabel = ref('')
 const confirmMessage = computed(() => `Delete "${deleteItemLabel.value}"? This cannot be undone.`)
+
+function getLogoUrl(type, id) {
+  const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+  return `${API_URL}/api/${type}/${id}/logo`
+}
 
 async function refresh(){
   try{
@@ -175,8 +208,13 @@ const sortLabel = computed(() => {
 async function addWork(){
   error.value = ''
   try{
-    await postWork(newItem.value)
+    const created = await postWork(newItem.value)
+    const createdId = created?.data?.[0]?.id
+    if (createdId && newLogo.value) {
+      await uploadWorkLogo(createdId, newLogo.value)
+    }
     newItem.value = { company_name:'', role:'', start_date:'', end_date:'', description:'' }
+    newLogo.value = null
     await refresh()
     showAdd.value = false
   }catch(e){ error.value = 'Add failed' }
@@ -187,16 +225,32 @@ function startEdit(w){
   editTargetId = w.id
   showEdit.value = true
 }
-function closeAdd(){ showAdd.value = false }
-function closeEdit(){ showEdit.value = false; editTargetId = null }
+function closeAdd(){ 
+  showAdd.value = false
+  newLogo.value = null
+}
+function closeEdit(){ 
+  showEdit.value = false
+  editTargetId = null
+  editLogo.value = null
+}
 async function performEdit(){
   error.value = ''
   try{
     await putWork(editTargetId, editItem.value)
+    if (editLogo.value) {
+      await uploadWorkLogo(editTargetId, editLogo.value)
+    }
+    editLogo.value = null
     closeEdit()
     await refresh()
   }catch(e){ error.value = 'Update failed' }
 }
+
+function onNewLogoSelected(file){ newLogo.value = file }
+function onNewLogoCleared(){ newLogo.value = null }
+function onEditLogoSelected(file){ editLogo.value = file }
+function onEditLogoCleared(){ editLogo.value = null }
 
 function askRemoveWork(w){
   deleteTargetId = w.id

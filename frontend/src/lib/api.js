@@ -111,10 +111,14 @@ export async function deleteEPortfolio(id){
   return apiDelete(`/api/e-portfolio/${id}`)
 }
 
-// E-Portfolio file upload (artefacts_evidence_files as hex)
-export async function uploadEPortfolioFile(id, file){
+// E-Portfolio file upload (artefacts_evidence_files as hex) - supports multiple files
+export async function uploadEPortfolioFiles(id, files){
   const form = new FormData()
-  form.append('file', file)
+  // Support both single file and array of files
+  const fileArray = Array.isArray(files) ? files : [files]
+  fileArray.forEach(file => {
+    form.append('files', file)
+  })
   const res = await fetch(`${API_URL}/api/e-portfolio/${id}/upload`,{
     method:'POST',
     headers:{ ...authHeader() },
@@ -133,55 +137,60 @@ export async function uploadEPortfolioFile(id, file){
   return await res.json()
 }
 
+// Backward compatibility: single file upload
+export async function uploadEPortfolioFile(id, file){
+  return uploadEPortfolioFiles(id, [file])
+}
+
 // Clear uploaded file
 export async function clearEPortfolioFile(id){
   const form = new FormData()
   form.append('clear','true')
-
-  // Upload multiple evidence files for e-portfolio
-  export async function uploadEvidenceFile(itemId, file){
-    const form = new FormData()
-    form.append('file', file)
-    const res = await fetch(`${API_URL}/api/e-portfolio/${itemId}/evidence`,{
-      method:'POST',
-      headers:{ ...authHeader() },
-      body: form
-    })
-    if(!res.ok){
-      let msg = `Request failed (${res.status})`
-      try{
-        const data = await res.json()
-        msg = data?.error || msg
-      }catch{
-        try{ msg = await res.text() }catch{}
-      }
-      throw new Error(msg)
-    }
-    return await res.json()
-  }
-
-  // Upload organization logo for education or work
-  export async function uploadOrgLogo(entityType, itemId, file){
-    const form = new FormData()
-    form.append('file', file)
-    const res = await fetch(`${API_URL}/api/${entityType}/${itemId}/org-logo`,{
-      method:'POST',
-      headers:{ ...authHeader() },
-      body: form
-    })
-    if(!res.ok){
-      let msg = `Request failed (${res.status})`
-      try{
-        const data = await res.json()
-        msg = data?.error || msg
-      }catch{
-        try{ msg = await res.text() }catch{}
-      }
-      throw new Error(msg)
-    }
-    return await res.json()
-  }
   const res = await fetch(`${API_URL}/api/e-portfolio/${id}/upload`,{
+    method:'POST',
+    headers:{ ...authHeader() },
+    body: form
+  })
+  if(!res.ok){
+    let msg = `Request failed (${res.status})`
+    try{
+      const data = await res.json()
+      msg = data?.error || msg
+    }catch{
+      try{ msg = await res.text() }catch{}
+    }
+    throw new Error(msg)
+  }
+  return await res.json()
+}
+
+// Education logo upload
+export async function uploadEducationLogo(id, file){
+  const form = new FormData()
+  form.append('logo', file)
+  const res = await fetch(`${API_URL}/api/education/${id}/logo`,{
+    method:'POST',
+    headers:{ ...authHeader() },
+    body: form
+  })
+  if(!res.ok){
+    let msg = `Request failed (${res.status})`
+    try{
+      const data = await res.json()
+      msg = data?.error || msg
+    }catch{
+      try{ msg = await res.text() }catch{}
+    }
+    throw new Error(msg)
+  }
+  return await res.json()
+}
+
+// Work logo upload
+export async function uploadWorkLogo(id, file){
+  const form = new FormData()
+  form.append('logo', file)
+  const res = await fetch(`${API_URL}/api/work/${id}/logo`,{
     method:'POST',
     headers:{ ...authHeader() },
     body: form

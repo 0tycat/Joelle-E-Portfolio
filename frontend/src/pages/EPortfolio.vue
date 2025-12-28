@@ -26,13 +26,17 @@
           <p v-if="item.takeaways" style="white-space:pre-wrap; margin-top:8px"><strong>Key Takeaways:</strong><br/>{{ item.takeaways }}</p>
           <p v-if="item.artefacts_evidence_links_texts" style="white-space:pre-wrap; margin-top:8px"><strong>Evidence/Links:</strong><br/>{{ item.artefacts_evidence_links_texts }}</p>
           <p v-if="item.relevance_career" style="white-space:pre-wrap; margin-top:8px"><strong>Relevance to Career:</strong><br/>{{ item.relevance_career }}</p>
-          <div v-if="getEvidenceLink(item)" style="margin-top:8px">
-            <div style="font-size:0.85em; color:#6b7280">Evidence</div>
-            <div style="margin-top:4px; display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid #e5e7eb; border-radius:6px; background:#f9fafb">
+          <div v-if="hasEvidenceFiles(item)" style="margin-top:8px">
+            <div style="font-size:0.85em; color:#6b7280; margin-bottom:4px">Evidence Files</div>
+            <div v-for="(file, index) in getEvidenceFileCount(item)" :key="index" style="margin-top:4px; display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid #e5e7eb; border-radius:6px; background:#f9fafb; margin-right:8px">
               <i class="fas fa-file"></i>
-              <a :href="getEvidenceLink(item)" target="_blank" rel="noopener" style="color:#2563eb; text-decoration:underline">Open</a>
+              <span style="font-size:0.9em">File {{ index + 1 }}</span>
               <span style="color:#d1d5db">|</span>
-              <button @click="downloadEvidence(item)" style="background:none; border:none; color:#2563eb; text-decoration:underline; cursor:pointer; padding:0; font-size:inherit" title="Download evidence file">
+              <button @click="previewEvidence(item.id, index)" style="background:none; border:none; color:#2563eb; text-decoration:underline; cursor:pointer; padding:0; font-size:inherit" title="Preview file">
+                <i class="fas fa-eye"></i> Preview
+              </button>
+              <span style="color:#d1d5db">|</span>
+              <button @click="downloadEvidence(item.id, index)" style="background:none; border:none; color:#2563eb; text-decoration:underline; cursor:pointer; padding:0; font-size:inherit" title="Download file">
                 <i class="fas fa-download"></i> Download
               </button>
             </div>
@@ -59,16 +63,20 @@
         <textarea class="input" v-model="newItem.takeaways" @keydown="insertBulletOnEnter" placeholder="What I Learned / Key Takeaways" rows="3" style="resize:vertical"></textarea>
         <textarea class="input" v-model="newItem.artefacts_evidence_links_texts" @keydown="insertBulletOnEnter" placeholder="Evidence / Artefacts / Links" rows="2" style="resize:vertical"></textarea>
         <textarea class="input" v-model="newItem.relevance_career" @keydown="insertBulletOnEnter" placeholder="Relevance to Internship / Career" rows="2" style="resize:vertical"></textarea>
-        <label style="font-weight:600">Evidence File (hex column) — drag & drop</label>
+        <label style="font-weight:600">Evidence Files — drag & drop (multiple files supported)</label>
         <FileDropzone
           :accept="fileAccept"
-          @selected="onNewFileSelected"
-          @cleared="onNewFileCleared"
+          :multiple="true"
+          @selected="onNewFilesSelected"
+          @cleared="onNewFilesCleared"
         >
           <template #label>
-            <strong>Drag & drop</strong> a file here, or <span class="link">click to choose</span>.
-            <div style="color:#6b7280; font-size:0.85em; margin-top:6px">
-              File will be uploaded right after Save.
+            <strong>Drag & drop</strong> files here, or <span class="link">click to choose</span>.
+            <div v-if="newFiles.length > 0" style="color:#059669; font-size:0.85em; margin-top:6px">
+              {{ newFiles.length }} file(s) selected
+            </div>
+            <div v-else style="color:#6b7280; font-size:0.85em; margin-top:6px">
+              Files will be uploaded right after Save. You can select multiple files.
             </div>
           </template>
         </FileDropzone>
@@ -94,12 +102,23 @@
         <textarea class="input" v-model="editItem.takeaways" @keydown="insertBulletOnEnter" placeholder="What I Learned / Key Takeaways" rows="3" style="resize:vertical"></textarea>
         <textarea class="input" v-model="editItem.artefacts_evidence_links_texts" @keydown="insertBulletOnEnter" placeholder="Evidence / Artefacts / Links" rows="2" style="resize:vertical"></textarea>
         <textarea class="input" v-model="editItem.relevance_career" @keydown="insertBulletOnEnter" placeholder="Relevance to Internship / Career" rows="2" style="resize:vertical"></textarea>
-        <label style="font-weight:600">Evidence File (hex column) — drag & drop</label>
+        <label style="font-weight:600">Evidence Files — drag & drop (multiple files supported)</label>
         <FileDropzone
           :accept="fileAccept"
-          @selected="onEditFileSelected"
-          @cleared="onEditFileCleared"
-        />
+          :multiple="true"
+          @selected="onEditFilesSelected"
+          @cleared="onEditFilesCleared"
+        >
+          <template #label>
+            <strong>Drag & drop</strong> files here, or <span class="link">click to choose</span>.
+            <div v-if="editFiles.length > 0" style="color:#059669; font-size:0.85em; margin-top:6px">
+              {{ editFiles.length }} file(s) selected (will replace existing files)
+            </div>
+            <div v-else style="color:#6b7280; font-size:0.85em; margin-top:6px">
+              Leave empty to keep existing files. Select new files to replace all existing files.
+            </div>
+          </template>
+        </FileDropzone>
         <div style="display:flex; gap:8px">
           <button class="btn" @click="performEdit"><i class="fas fa-save"></i> Save</button>
           <button class="btn secondary" @click="closeEdit"><i class="fas fa-times"></i> Cancel</button>
@@ -121,7 +140,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { apiGet, postEPortfolio, deleteEPortfolio, putEPortfolio, uploadEPortfolioFile, clearEPortfolioFile } from '../lib/api.js'
+import { apiGet, postEPortfolio, deleteEPortfolio, putEPortfolio, uploadEPortfolioFiles, clearEPortfolioFile } from '../lib/api.js'
 import { isAuthed as authIsAuthed } from '../lib/auth.js'
 import Modal from '../components/Modal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
@@ -159,8 +178,8 @@ const editItem = ref({
   artefacts_evidence_links_texts: '',
   relevance_career: ''
 })
-const newFile = ref(null)
-const editFile = ref(null)
+const newFiles = ref([])
+const editFiles = ref([])
 const fileAccept = [
   'application/pdf',
   'image/*',
@@ -199,8 +218,8 @@ async function addItem(){
   try{
     const created = await postEPortfolio(newItem.value)
     const createdId = created?.data?.[0]?.id
-    if(createdId && newFile.value){
-      await uploadEPortfolioFile(createdId, newFile.value)
+    if(createdId && newFiles.value.length > 0){
+      await uploadEPortfolioFiles(createdId, newFiles.value)
     }
     newItem.value = {
       activity_name: '',
@@ -215,7 +234,7 @@ async function addItem(){
       artefacts_evidence_links_texts: '',
       relevance_career: ''
     }
-    newFile.value = null
+    newFiles.value = []
     await refresh()
     showAdd.value = false
   }catch(e){ error.value = e?.message || 'Add failed' }
@@ -244,10 +263,10 @@ async function performEdit(){
   error.value = ''
   try{
     await putEPortfolio(editTargetId, editItem.value)
-    if(editFile.value){
-      await uploadEPortfolioFile(editTargetId, editFile.value)
+    if(editFiles.value.length > 0){
+      await uploadEPortfolioFiles(editTargetId, editFiles.value)
     }
-    editFile.value = null
+    editFiles.value = []
     closeEdit()
     await refresh()
   }catch(err){ error.value = err?.message || 'Update failed' }
@@ -272,31 +291,39 @@ async function performDelete(){
   }catch(err){ error.value = 'Delete failed' }
 }
 
-function onNewFileSelected(file){ newFile.value = file }
-function onNewFileCleared(){ newFile.value = null }
-function onEditFileSelected(file){ editFile.value = file }
-function onEditFileCleared(){ editFile.value = null }
+function onNewFilesSelected(files){ newFiles.value = Array.isArray(files) ? files : [files] }
+function onNewFilesCleared(){ newFiles.value = [] }
+function onEditFilesSelected(files){ editFiles.value = Array.isArray(files) ? files : [files] }
+function onEditFilesCleared(){ editFiles.value = [] }
 
-function getEvidenceLink(p){
-  const val = p?.artefacts_evidence_links_texts
-  if(typeof val !== 'string') return null
-  const trimmed = val.trim()
-  if(!trimmed) return null
-  if(trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed
-  return null
+function hasEvidenceFiles(item) {
+  const val = item?.artefacts_evidence_files
+  if (!val) return false
+  if (typeof val === 'string') return true
+  if (Array.isArray(val) && val.length > 0) return true
+  return false
 }
 
-function downloadEvidence(item){
-  const url = getEvidenceLink(item)
-  if(!url) return
-  // Extract filename from URL or use a default
-  const urlParts = url.split('/')
-  const fileName = urlParts[urlParts.length - 1].split('?')[0] || 'evidence'
-  // Create a temporary link and click it to trigger download
+function getEvidenceFileCount(item) {
+  const val = item?.artefacts_evidence_files
+  if (!val) return 0
+  if (typeof val === 'string') return 1
+  if (Array.isArray(val)) return val.length
+  return 0
+}
+
+function previewEvidence(itemId, fileIndex) {
+  const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+  const url = `${API_URL}/api/e-portfolio/${itemId}/preview/${fileIndex}`
+  window.open(url, '_blank')
+}
+
+function downloadEvidence(itemId, fileIndex) {
+  const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+  const url = `${API_URL}/api/e-portfolio/${itemId}/download/${fileIndex}`
   const link = document.createElement('a')
   link.href = url
-  link.download = fileName
-  link.target = '_blank'
+  link.download = `evidence_${itemId}_${fileIndex}`
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
