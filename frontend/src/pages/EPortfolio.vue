@@ -24,21 +24,27 @@
           <p v-if="item.what_i_did" style="white-space:pre-wrap; margin-top:8px"><strong>What I Did:</strong><br/>{{ item.what_i_did }}</p>
           <p v-if="item.skills_tools_acquired" style="white-space:pre-wrap; margin-top:8px"><strong>Skills & Tools:</strong><br/>{{ item.skills_tools_acquired }}</p>
           <p v-if="item.takeaways" style="white-space:pre-wrap; margin-top:8px"><strong>Key Takeaways:</strong><br/>{{ item.takeaways }}</p>
-          <p v-if="item.artefacts_evidence_links_texts" style="white-space:pre-wrap; margin-top:8px"><strong>Evidence/Links:</strong><br/>{{ item.artefacts_evidence_links_texts }}</p>
+          <!-- Hide raw links text; files are shown below as chips -->
           <p v-if="item.relevance_career" style="white-space:pre-wrap; margin-top:8px"><strong>Relevance to Career:</strong><br/>{{ item.relevance_career }}</p>
-          <div v-if="hasEvidenceFiles(item)" style="margin-top:8px">
+          <div v-if="evidenceList(item).length" style="margin-top:8px">
             <div style="font-size:0.85em; color:#6b7280; margin-bottom:4px">Evidence Files</div>
-            <div v-for="(file, index) in getEvidenceFileCount(item)" :key="index" style="margin-top:4px; display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid #e5e7eb; border-radius:6px; background:#f9fafb; margin-right:8px">
+            <div v-for="(f, idx) in evidenceList(item)" :key="idx" style="margin:4px 8px 0 0; display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid var(--border-color); border-radius:6px; background:var(--bg-tertiary)">
               <i class="fas fa-file"></i>
-              <span style="font-size:0.9em">File {{ index + 1 }}</span>
+              <span style="font-size:0.9em">{{ f.label }}</span>
               <span style="color:#d1d5db">|</span>
-              <button @click="previewEvidence(item.id, index)" style="background:none; border:none; color:#2563eb; text-decoration:underline; cursor:pointer; padding:0; font-size:inherit" title="Preview file">
+              <button @click="previewEvidenceItem(item.id, f)" style="background:none; border:none; color:#2563eb; text-decoration:underline; cursor:pointer; padding:0; font-size:inherit" title="Preview file">
                 <i class="fas fa-eye"></i> Preview
               </button>
               <span style="color:#d1d5db">|</span>
-              <button @click="downloadEvidence(item.id, index)" style="background:none; border:none; color:#2563eb; text-decoration:underline; cursor:pointer; padding:0; font-size:inherit" title="Download file">
+              <button @click="downloadEvidenceItem(item.id, f)" style="background:none; border:none; color:#2563eb; text-decoration:underline; cursor:pointer; padding:0; font-size:inherit" title="Download file">
                 <i class="fas fa-download"></i> Download
               </button>
+              <template v-if="isAuthed">
+                <span style="color:#d1d5db">|</span>
+                <button @click="removeEvidenceItem(item.id, f)" style="background:none; border:none; color:#ef4444; text-decoration:underline; cursor:pointer; padding:0; font-size:inherit" title="Remove file">
+                  <i class="fas fa-times"></i> Remove
+                </button>
+              </template>
             </div>
           </div>
           <div v-if="isAuthed" class="card-actions">
@@ -119,6 +125,25 @@
             </div>
           </template>
         </FileDropzone>
+        <div v-if="editEvidence.length" style="margin-top:8px">
+          <div style="font-size:0.85em; color:#6b7280; margin-bottom:4px">Existing Attachments</div>
+          <div v-for="(f, idx) in editEvidence" :key="idx" style="margin:4px 8px 0 0; display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid var(--border-color); border-radius:6px; background:var(--bg-tertiary)">
+            <i class="fas fa-file"></i>
+            <span style="font-size:0.9em">{{ f.label }}</span>
+            <span style="color:#d1d5db">|</span>
+            <button @click="previewEvidenceItem(editTargetId, f)" style="background:none; border:none; color:#2563eb; text-decoration:underline; cursor:pointer; padding:0; font-size:inherit" title="Preview file">
+              <i class="fas fa-eye"></i> Preview
+            </button>
+            <span style="color:#d1d5db">|</span>
+            <button @click="downloadEvidenceItem(editTargetId, f)" style="background:none; border:none; color:#2563eb; text-decoration:underline; cursor:pointer; padding:0; font-size:inherit" title="Download file">
+              <i class="fas fa-download"></i> Download
+            </button>
+            <span style="color:#d1d5db">|</span>
+            <button @click="removeEvidenceItem(editTargetId, f, true)" style="background:none; border:none; color:#ef4444; text-decoration:underline; cursor:pointer; padding:0; font-size:inherit" title="Remove file">
+              <i class="fas fa-times"></i> Remove
+            </button>
+          </div>
+        </div>
         <div style="display:flex; gap:8px">
           <button class="btn" @click="performEdit"><i class="fas fa-save"></i> Save</button>
           <button class="btn secondary" @click="closeEdit"><i class="fas fa-times"></i> Cancel</button>
@@ -140,7 +165,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { apiGet, postEPortfolio, deleteEPortfolio, putEPortfolio, uploadEPortfolioFiles, clearEPortfolioFile } from '../lib/api.js'
+import { apiGet, postEPortfolio, deleteEPortfolio, putEPortfolio, uploadEPortfolioFiles, clearEPortfolioFile, deleteEPortfolioFile, listEPortfolioFiles } from '../lib/api.js'
 import { isAuthed as authIsAuthed } from '../lib/auth.js'
 import Modal from '../components/Modal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
@@ -180,6 +205,7 @@ const editItem = ref({
 })
 const newFiles = ref([])
 const editFiles = ref([])
+const editEvidence = ref([])
 const fileAccept = [
   'application/pdf',
   'image/*',
@@ -240,7 +266,7 @@ async function addItem(){
   }catch(e){ error.value = e?.message || 'Add failed' }
 }
 
-function startEdit(p){
+async function startEdit(p){
   editItem.value = {
     activity_name: p.activity_name || '',
     activity_type: p.activity_type || '',
@@ -256,6 +282,23 @@ function startEdit(p){
   }
   editTargetId = p.id
   showEdit.value = true
+  try{
+    const response = await listEPortfolioFiles(editTargetId)
+    // Backend returns { items: [{source: 'bytea', index: 0}, {source: 'url', url: '...'}, ...] }
+    const items = response?.items || []
+    let urlCounter = 0
+    editEvidence.value = items.map((item) => {
+      if (item.source === 'bytea') {
+        return { source: 'bytea', index: item.index, label: `File ${item.index + 1}` }
+      } else {
+        const label = `Link ${++urlCounter}`
+        return { source: 'url', url: item.url, index: items.filter(i => i.source === 'url').indexOf(item), label }
+      }
+    })
+  }catch(e){ 
+    console.error('Failed to list files:', e)
+    editEvidence.value = [] 
+  }
 }
 function closeAdd(){ showAdd.value = false }
 function closeEdit(){ showEdit.value = false; editTargetId = null }
@@ -296,37 +339,59 @@ function onNewFilesCleared(){ newFiles.value = [] }
 function onEditFilesSelected(files){ editFiles.value = Array.isArray(files) ? files : [files] }
 function onEditFilesCleared(){ editFiles.value = [] }
 
-function hasEvidenceFiles(item) {
-  const val = item?.artefacts_evidence_files
-  if (!val) return false
-  if (typeof val === 'string') return true
-  if (Array.isArray(val) && val.length > 0) return true
-  return false
+function evidenceList(item){
+  const list = []
+  const files = item?.artefacts_evidence_files
+  if (typeof files === 'string' && files){
+    list.push({ source:'bytea', index:0, label:'File 1' })
+  } else if (Array.isArray(files)){
+    files.forEach((_, i) => list.push({ source:'bytea', index:i, label:`File ${i+1}` }))
+  }
+  const links = (item?.artefacts_evidence_links_texts || '').split('\n').map(s => s.trim()).filter(Boolean)
+  links.forEach((u, i) => list.push({ source:'url', url:u, index:i, label:`Link ${i+1}` }))
+  return list
 }
 
-function getEvidenceFileCount(item) {
-  const val = item?.artefacts_evidence_files
-  if (!val) return 0
-  if (typeof val === 'string') return 1
-  if (Array.isArray(val)) return val.length
-  return 0
-}
-
-function previewEvidence(itemId, fileIndex) {
+function previewEvidenceItem(itemId, f){
+  if (f.source === 'url') { window.open(f.url, '_blank'); return }
   const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
-  const url = `${API_URL}/api/e-portfolio/${itemId}/preview/${fileIndex}`
-  window.open(url, '_blank')
+  window.open(`${API_URL}/api/e-portfolio/${itemId}/preview/${f.index}`, '_blank')
 }
-
-function downloadEvidence(itemId, fileIndex) {
+function downloadEvidenceItem(itemId, f){
+  if (f.source === 'url') {
+    const a = document.createElement('a'); a.href = f.url; a.download = ''; document.body.appendChild(a); a.click(); document.body.removeChild(a); return
+  }
   const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
-  const url = `${API_URL}/api/e-portfolio/${itemId}/download/${fileIndex}`
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `evidence_${itemId}_${fileIndex}`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+  const a = document.createElement('a'); a.href = `${API_URL}/api/e-portfolio/${itemId}/download/${f.index}`; a.download = `evidence_${itemId}_${f.index}`; document.body.appendChild(a); a.click(); document.body.removeChild(a)
+}
+async function removeEvidenceItem(itemId, f, inEditModal=false){
+  try{
+    await deleteEPortfolioFile(itemId, f.index ?? 0, f.source)
+    if(inEditModal){
+      try{
+        const response = await listEPortfolioFiles(itemId)
+        // Backend returns { items: [{source: 'bytea', index: 0}, {source: 'url', url: '...'}, ...] }
+        const items = response?.items || []
+        let urlCounter = 0
+        editEvidence.value = items.map((item) => {
+          if (item.source === 'bytea') {
+            return { source: 'bytea', index: item.index, label: `File ${item.index + 1}` }
+          } else {
+            const label = `Link ${++urlCounter}`
+            return { source: 'url', url: item.url, index: items.filter(i => i.source === 'url').indexOf(item), label }
+          }
+        })
+      }catch(e){ 
+        console.error('Failed to refresh files:', e)
+        editEvidence.value = [] 
+      }
+      await refresh()
+    } else {
+      await refresh()
+    }
+  }catch(e){
+    alert(e?.message || 'Remove failed')
+  }
 }
 
 // Upload occurs as part of Save in add/edit flows

@@ -111,6 +111,23 @@ export async function deleteEPortfolio(id){
   return apiDelete(`/api/e-portfolio/${id}`)
 }
 
+// List existing evidence files (bytea + urls)
+export async function listEPortfolioFiles(id){
+  return apiGet(`/api/e-portfolio/${id}/files`)
+}
+
+// Delete a specific evidence file by index and source ('bytea' or 'url')
+export async function deleteEPortfolioFile(id, index, source){
+  const url = `${API_URL}/api/e-portfolio/${id}/files/${index}?source=${encodeURIComponent(source)}`
+  const res = await fetch(url, { method:'DELETE', headers:{ ...authHeader() } })
+  if(!res.ok){
+    let msg = `Request failed (${res.status})`
+    try{ const data = await res.json(); msg = data?.error || msg }catch{}
+    throw new Error(msg)
+  }
+  return await res.json()
+}
+
 // E-Portfolio file upload (artefacts_evidence_files as hex) - supports multiple files
 export async function uploadEPortfolioFiles(id, files){
   const form = new FormData()

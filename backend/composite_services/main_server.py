@@ -857,18 +857,25 @@ def upload_e_portfolio_file(item_id):
 
         try:
             response = supabase.table('e_portfolio').update({'artefacts_evidence_files': store_value}).eq('id', item_id).execute()
+            if getattr(response, 'error', None):
+                raise Exception(str(response.error))
             if response.data:
                 return jsonify({
                     'message': f'{len(hex_values)} file(s) uploaded', 
                     'file_count': len(hex_values),
                     'total_size_bytes': total_size
                 }), 200
-            return jsonify({'error': 'E-portfolio activity not found'}), 404
+            # No data returned counts as not found
+            raise Exception('PGRST204: artefacts_evidence_files not available or record missing')
         except Exception as update_err:
             # If the column is missing in schema cache (PGRST204) or not present, fall back to storage URLs
             err_msg = str(update_err)
             if 'PGRST204' not in err_msg and 'artefacts_evidence_files' not in err_msg and 'schema cache' not in err_msg:
-                raise
+                # If it's a genuine missing record, surface it
+                if 'not found' in err_msg.lower():
+                    return jsonify({'error': 'E-portfolio activity not found'}), 404
+                # Otherwise bubble up as server error
+                return jsonify({'error': f'Upload failed: {err_msg}'}), 500
 
             try:
                 bucket_name = 'eportfolio-evidence'
@@ -891,6 +898,8 @@ def upload_e_portfolio_file(item_id):
 
                 link_payload = '\n'.join(public_urls)
                 link_update = supabase.table('e_portfolio').update({'artefacts_evidence_links_texts': link_payload}).eq('id', item_id).execute()
+                if getattr(link_update, 'error', None):
+                    raise Exception(str(link_update.error))
                 if link_update.data:
                     return jsonify({
                         'message': 'File stored in bucket (column missing fallback)',
@@ -904,6 +913,90 @@ def upload_e_portfolio_file(item_id):
     except Exception as e:
         # Provide clearer server-side error context
         return jsonify({'error': f'Upload failed: {str(e)}'}), 500
+
+# List evidence files (bytea + storage URLs)
+@app.route('/api/e-portfolio/<int:item_id>/files', methods=['GET'])
+def list_eportfolio_files(item_id):
+    try:
+        resp = supabase.table('e_portfolio').select('artefacts_evidence_files, artefacts_evidence_links_texts').eq('id', item_id).execute()
+        if not resp.data:
+            return jsonify({'error': 'E-portfolio activity not found'}), 404
+        row = resp.data[0]
+        files_field = row.get('artefacts_evidence_files')
+        links_field = row.get('artefacts_evidence_links_texts') or ''
+        items = []
+        # Bytea files
+        if isinstance(files_field, str) and files_field:
+            items.append({'source': 'bytea', 'index': 0})
+        elif isinstance(files_field, list):
+            for idx in range(len(files_field)):
+                items.append({'source': 'bytea', 'index': idx})
+        # Storage/public URLs (split by newline)
+        for url in [u.strip() for u in str(links_field).split('\n') if u.strip()]:
+            items.append({'source': 'url', 'url': url})
+        return jsonify({'items': items}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Delete a single evidence file
+@app.route('/api/e-portfolio/<int:item_id>/files/<int:file_index>', methods=['DELETE'])
+@require_auth
+def delete_eportfolio_file(item_id, file_index):
+    try:
+        source = request.args.get('source', 'bytea')
+        # Load current row
+        resp = supabase.table('e_portfolio').select('artefacts_evidence_files, artefacts_evidence_links_texts').eq('id', item_id).execute()
+        if not resp.data:
+            return jsonify({'error': 'E-portfolio activity not found'}), 404
+        row = resp.data[0]
+
+        if source == 'bytea':
+            files_field = row.get('artefacts_evidence_files')
+            if isinstance(files_field, str):
+                if file_index != 0:
+                    return jsonify({'error': 'Index out of range'}), 400
+                new_value = None
+            elif isinstance(files_field, list):
+                if file_index < 0 or file_index >= len(files_field):
+                    return jsonify({'error': 'Index out of range'}), 400
+                new_list = files_field[:file_index] + files_field[file_index+1:]
+                new_value = new_list if new_list else None
+            else:
+                return jsonify({'error': 'No bytea files'}), 404
+
+            upd = supabase.table('e_portfolio').update({'artefacts_evidence_files': new_value}).eq('id', item_id).execute()
+            if upd.data:
+                return jsonify({'message': 'File removed'}), 200
+            return jsonify({'error': 'Update failed'}), 500
+
+        elif source == 'url':
+            # URL-based removal
+            links_field = row.get('artefacts_evidence_links_texts') or ''
+            urls = [u.strip() for u in str(links_field).split('\n') if u.strip()]
+            if file_index < 0 or file_index >= len(urls):
+                return jsonify({'error': 'Index out of range'}), 400
+            url_to_remove = urls[file_index]
+            # Try to delete from bucket if this is a public storage URL
+            try:
+                # Expected format: .../storage/v1/object/public/<bucket>/<path>
+                marker = '/storage/v1/object/public/'
+                if marker in url_to_remove:
+                    tail = url_to_remove.split(marker, 1)[1]
+                    bucket, path = tail.split('/', 1)
+                    supabase.storage.from_(bucket).remove([path])
+            except Exception as storage_err:
+                # Log but don't fail if storage cleanup fails
+                print(f"Storage cleanup warning: {storage_err}")
+            new_urls = urls[:file_index] + urls[file_index+1:]
+            new_links = '\n'.join(new_urls) if new_urls else None
+            upd = supabase.table('e_portfolio').update({'artefacts_evidence_links_texts': new_links}).eq('id', item_id).execute()
+            if upd.data:
+                return jsonify({'message': 'Link removed'}), 200
+            return jsonify({'error': 'Update failed'}), 500
+        else:
+            return jsonify({'error': 'Invalid source parameter'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # Proficiency levels endpoint (for Skills dropdown)
 @app.route('/api/prof-levels', methods=['GET'])
