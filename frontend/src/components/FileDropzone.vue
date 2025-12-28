@@ -147,9 +147,9 @@ function formatSize(bytes){
   gap: 6px;
   font-size: 0.9em;
   padding: 6px 8px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background: #fff;
+  background: var(--bg-tertiary);
 }
 .dz-file-main {
   display: flex;

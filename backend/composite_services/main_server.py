@@ -5,6 +5,8 @@ from functools import wraps
 from dotenv import load_dotenv
 import os
 import io
+import uuid
+from werkzeug.utils import secure_filename
 
 # Load environment variables
 load_dotenv()
@@ -853,14 +855,52 @@ def upload_e_portfolio_file(item_id):
         # Store as array if multiple files, single string if one file
         store_value = hex_values if len(hex_values) > 1 else hex_values[0]
 
-        response = supabase.table('e_portfolio').update({'artefacts_evidence_files': store_value}).eq('id', item_id).execute()
-        if response.data:
-            return jsonify({
-                'message': f'{len(hex_values)} file(s) uploaded', 
-                'file_count': len(hex_values),
-                'total_size_bytes': total_size
-            }), 200
-        return jsonify({'error': 'E-portfolio activity not found'}), 404
+        try:
+            response = supabase.table('e_portfolio').update({'artefacts_evidence_files': store_value}).eq('id', item_id).execute()
+            if response.data:
+                return jsonify({
+                    'message': f'{len(hex_values)} file(s) uploaded', 
+                    'file_count': len(hex_values),
+                    'total_size_bytes': total_size
+                }), 200
+            return jsonify({'error': 'E-portfolio activity not found'}), 404
+        except Exception as update_err:
+            # If the column is missing in schema cache (PGRST204) or not present, fall back to storage URLs
+            err_msg = str(update_err)
+            if 'PGRST204' not in err_msg and 'artefacts_evidence_files' not in err_msg and 'schema cache' not in err_msg:
+                raise
+
+            try:
+                bucket_name = 'eportfolio-evidence'
+                try:
+                    supabase.storage.create_bucket(bucket_name)
+                except Exception as create_err:
+                    # ignore if already exists
+                    if '409' not in str(create_err) and 'exists' not in str(create_err).lower():
+                        raise
+
+                public_urls = []
+                for uploaded, content in zip(uploaded_files, [bytes.fromhex(h[2:] if h.startswith('\\x') else h) for h in hex_values]):
+                    filename = secure_filename(uploaded.filename or 'evidence')
+                    path = f"{item_id}/{uuid.uuid4().hex}_{filename}"
+                    mime = uploaded.mimetype or 'application/octet-stream'
+                    supabase.storage.from_(bucket_name).upload(path, content, {'contentType': mime})
+                    public_url_resp = supabase.storage.from_(bucket_name).get_public_url(path)
+                    public_url = public_url_resp.get('publicURL') if isinstance(public_url_resp, dict) else public_url_resp
+                    public_urls.append(public_url)
+
+                link_payload = '\n'.join(public_urls)
+                link_update = supabase.table('e_portfolio').update({'artefacts_evidence_links_texts': link_payload}).eq('id', item_id).execute()
+                if link_update.data:
+                    return jsonify({
+                        'message': 'File stored in bucket (column missing fallback)',
+                        'storage_urls': public_urls,
+                        'file_count': len(public_urls),
+                        'total_size_bytes': total_size
+                    }), 200
+                return jsonify({'error': 'E-portfolio activity not found'}), 404
+            except Exception as fallback_err:
+                return jsonify({'error': f'Upload fallback failed: {str(fallback_err)}'}), 500
     except Exception as e:
         # Provide clearer server-side error context
         return jsonify({'error': f'Upload failed: {str(e)}'}), 500
