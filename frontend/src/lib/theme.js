@@ -10,7 +10,11 @@ export function useTheme() {
     applyTheme(newVal)
   }, { immediate: true })
 
-  return { isDark }
+  const toggleTheme = () => {
+    isDark.value = !isDark.value
+  }
+
+  return { isDark, toggleTheme }
 }
 
 function applyTheme(dark) {

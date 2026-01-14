@@ -1,19 +1,94 @@
 <template>
-  <section>
-    <h2>E-Portfolio</h2>
-
-    <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:12px">
-      <div v-if="isAuthed">
-        <button class="btn" @click="showAdd=true"><i class="fas fa-plus"></i> Add Activity</button>
+  <section class="eportfolio-section">
+    <!-- Header Card with Profile Info -->
+    <div class="eportfolio-header-card">
+      <div class="header-top">
+        <h1 class="profile-name">JOELLE LOW</h1>
+        <p class="profile-tagline">LEARNING TO ADAPT, STRATEGISING TO GROW</p>
       </div>
+
+      <div class="header-content">
+        <!-- Profile Card -->
+        <div class="profile-card">
+          <div class="profile-image-placeholder">
+            <span>Photo of me</span>
+          </div>
+          <h2 class="profile-full-name">Low En Tong Joelle</h2>
+          <p class="profile-degree">Information Systems<br/>Undergraduate @ SMU</p>
+          <a href="https://linkedin.com" target="_blank" class="linkedin-icon">
+            <i class="fab fa-linkedin"></i>
+          </a>
+        </div>
+
+        <!-- Main Content -->
+        <div class="header-main-content">
+          <h2 class="greeting">Hello :D</h2>
+          <h3 class="intro-title">My name is Joelle Low</h3>
+          <p class="intro-text">I am a third-year undergraduate student pursuing a Bachelor of Science (Information Systems) degree in Singapore Management University.</p>
+          
+          <h3 class="intro-title">I am an avid learner</h3>
+          <ul class="learner-points">
+            <li>who is eager to acquire new experiences and apply my current capabilities into different settings. I aspire to be able to make impactful changes in people's lives. I am open to learning new things!</li>
+          </ul>
+
+          <div class="header-buttons">
+            <button class="btn btn-outline">RESUME</button>
+            <button class="btn btn-outline">Education</button>
+          </div>
+
+          <button class="read-more-btn" @click="showFullIntro = !showFullIntro">
+            Read more <i :class="showFullIntro ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Motto Section -->
+      <div class="motto-box">
+        <h3>My Motto</h3>
+        <p>Audacious | Adapt | Cooperation</p>
+      </div>
+
+      <!-- Values Grid -->
+      <div class="values-grid">
+        <div class="values-card">
+          <div class="activity-placeholder">Photo of some activity</div>
+        </div>
+        <div class="values-content">
+          <div class="value-item">
+            <h4>Cooperation</h4>
+            <p>I value cooperation and clear communication in projects ___</p>
+          </div>
+          <div class="value-item">
+            <h4>Adapt</h4>
+            <p>I always adapt when I am required to learn something new ___</p>
+          </div>
+          <div class="value-item">
+            <h4>Audacious</h4>
+            <p>I am audacious when it comes to ___</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Experience Button -->
+      <button class="btn btn-accent" @click="showActivities = true" style="margin-top: 24px;">Experience</button>
     </div>
 
-    <div v-if="loading">Loading...</div>
-    <div v-else>
-      <p v-if="error" style="color:#fca5a5">{{ error }}</p>
+    <!-- Activities Section (shown when Experience is clicked or when showActivities is true) -->
+    <div v-if="showActivities" class="activities-section">
+      <h2>E-Portfolio Activities</h2>
+
+      <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:12px">
+        <div v-if="isAuthed">
+          <button class="btn" @click="showAdd=true"><i class="fas fa-plus"></i> Add Activity</button>
+        </div>
+      </div>
+
+      <div v-if="loading">Loading...</div>
       <div v-else>
-        <div v-if="items.length===0" class="card">No activities yet.</div>
-        <div v-for="item in items" :key="item.id" class="card">
+        <p v-if="error" style="color:#fca5a5">{{ error }}</p>
+        <div v-else>
+          <div v-if="items.length===0" class="card">No activities yet.</div>
+          <div v-for="item in items" :key="item.id" class="card">
           <strong>{{ item.activity_name }}</strong>
           <div v-if="item.activity_type" style="color:#6b7280; font-size:0.9em">{{ item.activity_type }}</div>
           <div v-if="item.start_date || item.finish_date" style="margin:4px 0">
@@ -54,6 +129,7 @@
         </div>
       </div>
     </div>
+    </div>
 
     <!-- Add Modal -->
     <Modal :open="showAdd" title="Add E-Portfolio Activity" @close="closeAdd">
@@ -69,23 +145,7 @@
         <textarea class="input" v-model="newItem.takeaways" @keydown="insertBulletOnEnter" placeholder="What I Learned / Key Takeaways" rows="3" style="resize:vertical"></textarea>
         <textarea class="input" v-model="newItem.artefacts_evidence_links_texts" @keydown="insertBulletOnEnter" placeholder="Evidence / Artefacts / Links" rows="2" style="resize:vertical"></textarea>
         <textarea class="input" v-model="newItem.relevance_career" @keydown="insertBulletOnEnter" placeholder="Relevance to Internship / Career" rows="2" style="resize:vertical"></textarea>
-        <label style="font-weight:600">Evidence Files — drag & drop (multiple files supported)</label>
-        <FileDropzone
-          :accept="fileAccept"
-          :multiple="true"
-          @selected="onNewFilesSelected"
-          @cleared="onNewFilesCleared"
-        >
-          <template #label>
-            <strong>Drag & drop</strong> files here, or <span class="link">click to choose</span>.
-            <div v-if="newFiles.length > 0" style="color:#059669; font-size:0.85em; margin-top:6px">
-              {{ newFiles.length }} file(s) selected
-            </div>
-            <div v-else style="color:#6b7280; font-size:0.85em; margin-top:6px">
-              Files will be uploaded right after Save. You can select multiple files.
-            </div>
-          </template>
-        </FileDropzone>
+        
         <div style="display:flex; gap:8px">
           <button class="btn" @click="addItem"><i class="fas fa-save"></i> Save</button>
           <button class="btn secondary" @click="closeAdd"><i class="fas fa-times"></i> Cancel</button>
@@ -108,42 +168,7 @@
         <textarea class="input" v-model="editItem.takeaways" @keydown="insertBulletOnEnter" placeholder="What I Learned / Key Takeaways" rows="3" style="resize:vertical"></textarea>
         <textarea class="input" v-model="editItem.artefacts_evidence_links_texts" @keydown="insertBulletOnEnter" placeholder="Evidence / Artefacts / Links" rows="2" style="resize:vertical"></textarea>
         <textarea class="input" v-model="editItem.relevance_career" @keydown="insertBulletOnEnter" placeholder="Relevance to Internship / Career" rows="2" style="resize:vertical"></textarea>
-        <label style="font-weight:600">Evidence Files — drag & drop (multiple files supported)</label>
-        <FileDropzone
-          :accept="fileAccept"
-          :multiple="true"
-          @selected="onEditFilesSelected"
-          @cleared="onEditFilesCleared"
-        >
-          <template #label>
-            <strong>Drag & drop</strong> files here, or <span class="link">click to choose</span>.
-            <div v-if="editFiles.length > 0" style="color:#059669; font-size:0.85em; margin-top:6px">
-              {{ editFiles.length }} file(s) selected (will replace existing files)
-            </div>
-            <div v-else style="color:#6b7280; font-size:0.85em; margin-top:6px">
-              Leave empty to keep existing files. Select new files to replace all existing files.
-            </div>
-          </template>
-        </FileDropzone>
-        <div v-if="editEvidence.length" style="margin-top:8px">
-          <div style="font-size:0.85em; color:#6b7280; margin-bottom:4px">Existing Attachments</div>
-          <div v-for="(f, idx) in editEvidence" :key="idx" style="margin:4px 8px 0 0; display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid var(--border-color); border-radius:6px; background:var(--bg-tertiary)">
-            <i class="fas fa-file"></i>
-            <span style="font-size:0.9em">{{ f.label }}</span>
-            <span style="color:#d1d5db">|</span>
-            <button @click="previewEvidenceItem(editTargetId, f)" style="background:none; border:none; color:#2563eb; text-decoration:underline; cursor:pointer; padding:0; font-size:inherit" title="Preview file">
-              <i class="fas fa-eye"></i> Preview
-            </button>
-            <span style="color:#d1d5db">|</span>
-            <button @click="downloadEvidenceItem(editTargetId, f)" style="background:none; border:none; color:#2563eb; text-decoration:underline; cursor:pointer; padding:0; font-size:inherit" title="Download file">
-              <i class="fas fa-download"></i> Download
-            </button>
-            <span style="color:#d1d5db">|</span>
-            <button @click="removeEvidenceItem(editTargetId, f, true)" style="background:none; border:none; color:#ef4444; text-decoration:underline; cursor:pointer; padding:0; font-size:inherit" title="Remove file">
-              <i class="fas fa-times"></i> Remove
-            </button>
-          </div>
-        </div>
+        
         <div style="display:flex; gap:8px">
           <button class="btn" @click="performEdit"><i class="fas fa-save"></i> Save</button>
           <button class="btn secondary" @click="closeEdit"><i class="fas fa-times"></i> Cancel</button>
@@ -165,18 +190,20 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { apiGet, postEPortfolio, deleteEPortfolio, putEPortfolio, uploadEPortfolioFiles, clearEPortfolioFile, deleteEPortfolioFile, listEPortfolioFiles } from '../lib/api.js'
+import { apiGet, postEPortfolio, deleteEPortfolio, putEPortfolio, deleteEPortfolioFile } from '../lib/api.js'
 import { isAuthed as authIsAuthed } from '../lib/auth.js'
 import Modal from '../components/Modal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
 import DatePicker from '../components/DatePicker.vue'
-import FileDropzone from '../components/FileDropzone.vue'
+// File uploads removed: no FileDropzone
 import { formatDate } from '../lib/date.js'
 
 const items = ref([])
 const loading = ref(true)
 const error = ref('')
 const isAuthed = authIsAuthed
+const showActivities = ref(false)
+const showFullIntro = ref(false)
 const newItem = ref({
   activity_name: '',
   activity_type: '',
@@ -203,21 +230,7 @@ const editItem = ref({
   artefacts_evidence_links_texts: '',
   relevance_career: ''
 })
-const newFiles = ref([])
-const editFiles = ref([])
-const editEvidence = ref([])
-const fileAccept = [
-  'application/pdf',
-  'image/*',
-  'text/*',
-  'text/csv',
-  'application/csv',
-  // Excel MIME types and extensions
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
-  'application/vnd.ms-excel', // legacy .xls
-  'application/vnd.ms-excel.sheet.macroEnabled.12', // .xlsm
-  '.xlsx', '.xls', '.xlsm', '.csv'
-].join(',')
+// File upload state removed
 const showAdd = ref(false)
 const showEdit = ref(false)
 let editTargetId = null
@@ -242,11 +255,7 @@ onMounted(refresh)
 async function addItem(){
   error.value = ''
   try{
-    const created = await postEPortfolio(newItem.value)
-    const createdId = created?.data?.[0]?.id
-    if(createdId && newFiles.value.length > 0){
-      await uploadEPortfolioFiles(createdId, newFiles.value)
-    }
+    await postEPortfolio(newItem.value)
     newItem.value = {
       activity_name: '',
       activity_type: '',
@@ -260,7 +269,7 @@ async function addItem(){
       artefacts_evidence_links_texts: '',
       relevance_career: ''
     }
-    newFiles.value = []
+    
     await refresh()
     showAdd.value = false
   }catch(e){ error.value = e?.message || 'Add failed' }
@@ -282,23 +291,7 @@ async function startEdit(p){
   }
   editTargetId = p.id
   showEdit.value = true
-  try{
-    const response = await listEPortfolioFiles(editTargetId)
-    // Backend returns { items: [{source: 'bytea', index: 0}, {source: 'url', url: '...'}, ...] }
-    const items = response?.items || []
-    let urlCounter = 0
-    editEvidence.value = items.map((item) => {
-      if (item.source === 'bytea') {
-        return { source: 'bytea', index: item.index, label: `File ${item.index + 1}` }
-      } else {
-        const label = `Link ${++urlCounter}`
-        return { source: 'url', url: item.url, index: items.filter(i => i.source === 'url').indexOf(item), label }
-      }
-    })
-  }catch(e){ 
-    console.error('Failed to list files:', e)
-    editEvidence.value = [] 
-  }
+  
 }
 function closeAdd(){ showAdd.value = false }
 function closeEdit(){ showEdit.value = false; editTargetId = null }
@@ -306,10 +299,7 @@ async function performEdit(){
   error.value = ''
   try{
     await putEPortfolio(editTargetId, editItem.value)
-    if(editFiles.value.length > 0){
-      await uploadEPortfolioFiles(editTargetId, editFiles.value)
-    }
-    editFiles.value = []
+    
     closeEdit()
     await refresh()
   }catch(err){ error.value = err?.message || 'Update failed' }
@@ -334,10 +324,7 @@ async function performDelete(){
   }catch(err){ error.value = 'Delete failed' }
 }
 
-function onNewFilesSelected(files){ newFiles.value = Array.isArray(files) ? files : [files] }
-function onNewFilesCleared(){ newFiles.value = [] }
-function onEditFilesSelected(files){ editFiles.value = Array.isArray(files) ? files : [files] }
-function onEditFilesCleared(){ editFiles.value = [] }
+// File dropzone handlers removed
 
 function evidenceList(item){
   const list = []

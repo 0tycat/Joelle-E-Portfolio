@@ -1,23 +1,9 @@
 <template>
   <div class="app">
-    <header class="app-header">
-      <button class="hamburger-header" @click="sidebarOpen = !sidebarOpen" aria-label="Toggle sidebar">
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
-    </header>
-    <button class="floating-theme-toggle" @click="isDark = !isDark" title="Toggle dark/light mode">
-      <i :class="isDark ? 'fas fa-sun' : 'fas fa-moon'"></i>
-      {{ isDark ? 'Light' : 'Dark' }}
-    </button>
-    <div class="app-main">
-      <Sidebar />
-      <main class="content">
-        <router-view />
-      </main>
-    </div>
-    <div v-if="sidebarOpen && isMobile" class="sidebar-overlay" @click="sidebarOpen = false"></div>
+    <TopNavbar />
+    <main class="content">
+      <router-view />
+    </main>
 
     <!-- Session Timeout Warning Modal -->
     <div v-if="showSessionWarning" class="session-modal-overlay">
@@ -39,29 +25,19 @@
 </template>
 
 <script setup>
-import { ref, provide, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useTheme } from './lib/theme.js'
 import { logout, initializeAuth } from './lib/auth.js'
 import { useSessionTimeout } from './lib/sessionTimeout.js'
-import Sidebar from './components/Sidebar.vue'
+import TopNavbar from './components/TopNavbar.vue'
 import '@fortawesome/fontawesome-free/css/all.min.css'
 
 const { isDark } = useTheme()
-const sidebarOpen = ref(false)
-const isMobile = ref(false)
 const showSessionWarning = ref(false)
 const isInitializing = ref(true)
 
 // Use session timeout composable
 useSessionTimeout()
-
-// Provide sidebar state to Sidebar component
-provide('sidebarOpen', sidebarOpen)
-
-// Check if mobile on mount and when window resizes
-const checkMobile = () => {
-  isMobile.value = window.innerWidth <= 768
-}
 
 // Handle session warning events
 const handleSessionWarning = (event) => {
@@ -88,26 +64,29 @@ onMounted(async () => {
   await initializeAuth()
   isInitializing.value = false
   
-  checkMobile()
-  window.addEventListener('resize', checkMobile)
   window.addEventListener('session:warning', handleSessionWarning)
   window.addEventListener('session:expired', handleSessionExpired)
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', checkMobile)
   window.removeEventListener('session:warning', handleSessionWarning)
   window.removeEventListener('session:expired', handleSessionExpired)
 })
 </script>
 
 <style scoped>
-.sidebar-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 998;
-  top: 60px;
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.content {
+  flex: 1;
+  padding: 20px;
+  overflow: auto;
+  height: 100%;
 }
 
 .session-modal-overlay {
