@@ -36,6 +36,7 @@
             <i class="fas fa-chevron-down"></i>
           </button>
           <ul class="dropdown-menu" v-show="resumeOpen">
+            <li><RouterLink to="/resume" @click="closeMenu" class="dropdown-link">Full Resume</RouterLink></li>
             <li><RouterLink to="/education" @click="closeMenu" class="dropdown-link">Education</RouterLink></li>
             <li><RouterLink to="/skills" @click="closeMenu" class="dropdown-link">Skills</RouterLink></li>
             <li><RouterLink to="/experience" @click="closeMenu" class="dropdown-link">Work Experience</RouterLink></li>

@@ -5,11 +5,13 @@ import Education from '../pages/Education.vue'
 import Projects from '../pages/Projects.vue'
 import EPortfolio from '../pages/EPortfolio.vue'
 import Community from '../pages/Community.vue'
+import Resume from '../pages/Resume.vue'
 import Login from '../pages/Login.vue'
 
 const routes = [
   { path: '/', redirect: '/portfolio' },
   { path: '/portfolio', component: EPortfolio },
+  { path: '/resume', component: Resume },
   { path: '/education', component: Education },
   { path: '/skills', component: Skills },
   { path: '/experience', component: Work },
