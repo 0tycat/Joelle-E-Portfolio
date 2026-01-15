@@ -22,13 +22,12 @@
           <p class="intro-text">I am a third-year undergraduate student pursuing a Bachelor of Science (Information Systems) degree in Singapore Management University.</p>
           
           <h3 class="intro-title">I am an avid learner</h3>
-          <ul class="learner-points">
-            <li>who is eager to acquire new experiences and apply my current capabilities into different settings. I aspire to be able to make impactful changes in people's lives. I am open to learning new things!</li>
-          </ul>
+          <p class="intro-text">— who is eager to acquire new experiences and apply my current capabilities into different settings. I aspire to be able to make impactful changes in people's lives. I am open to learning new things!</p>
 
           <div class="header-buttons">
             <button class="btn btn-outline">RESUME</button>
-            <button class="btn btn-outline">Education</button>
+            <button class="btn btn-outline">Projects</button>
+            <button class="btn btn-outline" @click="showActivities = true">Experience</button>
           </div>
 
           <button class="read-more-btn" @click="showFullIntro = !showFullIntro">
@@ -63,9 +62,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Experience Button -->
-      <button class="btn btn-accent" @click="showActivities = true" style="margin-top: 24px;">Experience</button>
     </div>
 
     <!-- Activities Section (shown when Experience is clicked or when showActivities is true) -->

@@ -14,6 +14,7 @@ const routes = [
   { path: '/skills', component: Skills },
   { path: '/experience', component: Work },
   { path: '/community', component: Community },
+  { path: '/projects', component: Projects },
   { path: '/interests', component: Projects },
   { path: '/login', component: Login },
   { path: '/:pathMatch(.*)*', redirect: '/portfolio' }

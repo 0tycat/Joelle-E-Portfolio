@@ -42,10 +42,10 @@
           </ul>
         </li>
 
-        <!-- Experience -->
+        <!-- Projects -->
         <li class="nav-item">
-          <RouterLink to="/experience" @click="closeMenu" class="nav-link">
-            Experience
+          <RouterLink to="/projects" @click="closeMenu" class="nav-link">
+            Projects
           </RouterLink>
         </li>
 
@@ -53,13 +53,6 @@
         <li class="nav-item">
           <RouterLink to="/interests" @click="closeMenu" class="nav-link">
             INTERESTS
-          </RouterLink>
-        </li>
-
-        <!-- Education -->
-        <li class="nav-item">
-          <RouterLink to="/education" @click="closeMenu" class="nav-link">
-            Education
           </RouterLink>
         </li>
 
