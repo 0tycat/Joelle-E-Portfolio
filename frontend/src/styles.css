@@ -218,7 +218,7 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue"
 }
 
 .greeting {
-  font-size: 48px;
+  font-size: 100px;
   font-weight: 400;
   margin: 0 0 16px 0;
   color: var(--text-primary);
