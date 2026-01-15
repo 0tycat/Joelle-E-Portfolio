@@ -75,7 +75,8 @@ def create_education():
             'institute_name': data.get('institute_name'),
             'certification': data.get('certification'),
             'start_date': data.get('start_date'),
-            'finish_date': data.get('finish_date') or None  # Convert empty string to None
+            'finish_date': data.get('finish_date') or None,  # Convert empty string to None
+            'organisation_logo': data.get('organisation_logo') or None
         }
 
         response = supabase.table('education').insert(new_item).execute()
@@ -90,7 +91,7 @@ def update_education(edu_id):
         data = request.get_json()
 
         update_data = {}
-        for key in ['institute_name', 'certification', 'start_date', 'finish_date']:
+        for key in ['institute_name', 'certification', 'start_date', 'finish_date', 'organisation_logo']:
             if key in data:
                 # Convert empty strings to None for date fields
                 if key in ['start_date', 'finish_date']:

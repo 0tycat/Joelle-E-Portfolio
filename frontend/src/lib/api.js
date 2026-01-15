@@ -21,11 +21,31 @@ export async function apiPost(path, body){
   return await res.json()
 }
 
+export async function apiPostFormData(path, formData){
+  const res = await fetch(`${API_URL}${path}`,{
+    method:'POST',
+    headers:{ ...authHeader() },
+    body: formData
+  })
+  if(!res.ok) throw new Error('Request failed')
+  return await res.json()
+}
+
 export async function apiPut(path, body){
   const res = await fetch(`${API_URL}${path}`,{
     method:'PUT',
     headers:{ 'Content-Type':'application/json', ...authHeader() },
     body: JSON.stringify(body)
+  })
+  if(!res.ok) throw new Error('Request failed')
+  return await res.json()
+}
+
+export async function apiPutFormData(path, formData){
+  const res = await fetch(`${API_URL}${path}`,{
+    method:'PUT',
+    headers:{ ...authHeader() },
+    body: formData
   })
   if(!res.ok) throw new Error('Request failed')
   return await res.json()
@@ -52,10 +72,28 @@ export async function deleteSkill(id){
 }
 
 // Education write API
-export async function postEducation(payload){
+export async function postEducation(payload, logoFile = null){
+  if (logoFile) {
+    const form = new FormData()
+    form.append('institute_name', payload.institute_name)
+    form.append('certification', payload.certification)
+    form.append('start_date', payload.start_date)
+    if (payload.finish_date) form.append('finish_date', payload.finish_date)
+    form.append('organisation_logo', logoFile)
+    return apiPostFormData('/api/education', form)
+  }
   return apiPost('/api/education', payload)
 }
-export async function putEducation(id, payload){
+export async function putEducation(id, payload, logoFile = null){
+  if (logoFile) {
+    const form = new FormData()
+    form.append('institute_name', payload.institute_name)
+    form.append('certification', payload.certification)
+    form.append('start_date', payload.start_date)
+    if (payload.finish_date) form.append('finish_date', payload.finish_date)
+    form.append('organisation_logo', logoFile)
+    return apiPutFormData(`/api/education/${id}`, form)
+  }
   return apiPut(`/api/education/${id}`, payload)
 }
 export async function deleteEducation(id){

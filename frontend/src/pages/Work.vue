@@ -115,7 +115,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { apiGet, postWork, deleteWork, putWork, uploadWorkLogo } from '../lib/api.js'
+import { apiGet, postWork, deleteWork, putWork } from '../lib/api.js'
 import { isAuthed as authIsAuthed } from '../lib/auth.js'
 import Modal from '../components/Modal.vue'
 import ConfirmModal from '../components/ConfirmModal.vue'
@@ -208,11 +208,20 @@ const sortLabel = computed(() => {
 async function addWork(){
   error.value = ''
   try{
-    const created = await postWork(newItem.value)
-    const createdId = created?.data?.[0]?.id
-    if (createdId && newLogo.value) {
-      await uploadWorkLogo(createdId, newLogo.value)
+    const formData = new FormData()
+    formData.append('company_name', newItem.value.company_name)
+    formData.append('role', newItem.value.role)
+    formData.append('start_date', newItem.value.start_date)
+    formData.append('end_date', newItem.value.end_date)
+    formData.append('description', newItem.value.description)
+    if (newLogo.value) {
+      formData.append('organisation_logo', newLogo.value)
     }
+    await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}/api/work`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      body: formData
+    }).then(r => r.json())
     newItem.value = { company_name:'', role:'', start_date:'', end_date:'', description:'' }
     newLogo.value = null
     await refresh()
@@ -237,10 +246,20 @@ function closeEdit(){
 async function performEdit(){
   error.value = ''
   try{
-    await putWork(editTargetId, editItem.value)
+    const formData = new FormData()
+    formData.append('company_name', editItem.value.company_name)
+    formData.append('role', editItem.value.role)
+    formData.append('start_date', editItem.value.start_date)
+    formData.append('end_date', editItem.value.end_date)
+    formData.append('description', editItem.value.description)
     if (editLogo.value) {
-      await uploadWorkLogo(editTargetId, editLogo.value)
+      formData.append('organisation_logo', editLogo.value)
     }
+    await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}/api/work/${editTargetId}`, {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      body: formData
+    }).then(r => r.json())
     editLogo.value = null
     closeEdit()
     await refresh()

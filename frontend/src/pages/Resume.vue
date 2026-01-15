@@ -98,14 +98,18 @@
       </div>
       <div v-if="educationLoading">Loading...</div>
       <div v-else>
-        <div v-for="e in educationFilteredAndSorted" :key="e.id" class="card">
-          <div style="display:flex; gap:12px; align-items:start">
-            <img v-if="e.organization_logo" :src="getLogoUrl('education', e.id)" alt="Logo" style="width:48px; height:48px; object-fit:contain; border-radius:4px" />
-            <div style="flex:1">
-              <strong>{{ e.institute_name }}</strong>
-              <div>{{ e.certification }}</div>
-              <div>{{ formatDate(e.start_date) }} - {{ e.finish_date ? formatDate(e.finish_date) : 'Present' }}</div>
+        <div v-for="e in educationFilteredAndSorted" :key="e.id" class="card education-card">
+          <div class="education-logo-section">
+            <img v-if="e.organisation_logo" :src="base64ToDataUrl(e.organisation_logo)" alt="Logo" class="education-logo" />
+            <div v-else class="education-logo-placeholder">
+              <i class="fas fa-image"></i>
+              <span>No Logo</span>
             </div>
+          </div>
+          <div class="education-info-section">
+            <strong class="education-institute">{{ e.institute_name }}</strong>
+            <div class="education-certification">{{ e.certification }}</div>
+            <div class="education-dates">{{ formatDate(e.start_date) }} - {{ e.finish_date ? formatDate(e.finish_date) : 'Present' }}</div>
           </div>
           <div v-if="isAuthed" class="card-actions">
             <button class="btn-icon secondary" @click="startEditEducation(e)" title="Edit"><i class="fas fa-edit"></i></button>
@@ -298,7 +302,7 @@ import { ref, onMounted, computed } from 'vue'
 import { 
   apiGet, 
   postWork, deleteWork, putWork, uploadWorkLogo,
-  postEducation, deleteEducation, putEducation, uploadEducationLogo,
+  postEducation, deleteEducation, putEducation,
   postSkill, putSkill, deleteSkill, getProfLevels
 } from '../lib/api.js'
 import { isAuthed as authIsAuthed } from '../lib/auth.js'
@@ -481,9 +485,7 @@ async function refreshEducation(){
 async function addEducation(){
   educationError.value = ''
   try{
-    const created = await postEducation(newEducation.value)
-    const createdId = created?.data?.[0]?.id
-    if (createdId && newEducationLogo.value) await uploadEducationLogo(createdId, newEducationLogo.value)
+    const created = await postEducation(newEducation.value, newEducationLogo.value)
     newEducation.value = { institute_name:'', certification:'', start_date:'', finish_date:'' }
     newEducationLogo.value = null
     await refreshEducation()
@@ -503,8 +505,7 @@ function closeEditEducation(){ showEditEducation.value = false; editEducationTar
 async function performEditEducation(){
   educationError.value = ''
   try{
-    await putEducation(editEducationTargetId, editEducation.value)
-    if (editEducationLogo.value) await uploadEducationLogo(editEducationTargetId, editEducationLogo.value)
+    await putEducation(editEducationTargetId, editEducation.value, editEducationLogo.value)
     editEducationLogo.value = null
     closeEditEducation()
     await refreshEducation()
@@ -659,6 +660,12 @@ function scrollTo(sectionId) {
   }
 }
 
+function base64ToDataUrl(base64String) {
+  if (!base64String) return null
+  // Base64 text can be used directly in a data URL
+  return `data:image/jpeg;base64,${base64String}`
+}
+
 // ========== INITIALIZE ==========
 onMounted(() => {
   refreshWork()
@@ -710,6 +717,70 @@ onMounted(() => {
   margin-bottom: 1rem;
 }
 
+.education-card {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.education-logo-section {
+  flex-shrink: 0;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.education-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 2px solid var(--card-border);
+}
+
+.education-logo-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--card-border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  gap: 0.5rem;
+}
+
+.education-logo-placeholder i {
+  font-size: 1.5rem;
+  opacity: 0.5;
+}
+
+.education-info-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.education-institute {
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.education-certification {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.education-dates {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
 @media (max-width: 768px) {
   .skip-buttons {
     flex-direction: column;
@@ -719,5 +790,16 @@ onMounted(() => {
   .resume-section {
     padding: 1rem;
   }
+
+  .education-card {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .education-logo-section {
+    width: 100px;
+    height: 100px;
+  }
 }
+
 </style>

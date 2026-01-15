@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 import os
 import io
 import uuid
+import requests
+import psycopg2
 from werkzeug.utils import secure_filename
 
 # Load environment variables
@@ -224,6 +226,9 @@ def get_education():
         response = supabase.table('education').select('*').order('start_date', desc=True).execute()
         return jsonify(response.data), 200
     except Exception as e:
+        print(f"GET education error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 # Create new education
@@ -233,13 +238,27 @@ def create_education():
     if request.method == 'OPTIONS':
         return '', 204
     try:
-        data = request.get_json()
+        # Handle both JSON and form-data
+        if request.is_json:
+            data = request.get_json()
+        else:
+            data = request.form.to_dict()
+        
         new_item = {
             'institute_name': data.get('institute_name'),
             'certification': data.get('certification'),
             'start_date': (None if data.get('start_date') == '' else data.get('start_date')),
             'finish_date': (None if data.get('finish_date') == '' else data.get('finish_date'))
         }
+        
+        # Handle logo upload
+        logo_file = request.files.get('organisation_logo') if request.files else None
+        if logo_file:
+            content = logo_file.read() or b''
+            if len(content) > 2 * 1024 * 1024:  # 2 MB max
+                return jsonify({'error': 'Logo too large (max 2 MB)'}), 413
+            new_item['organisation_logo'] = '\\x' + content.hex()
+        
         new_item = {k: v for k, v in new_item.items() if v is not None}
         response = supabase.table('education').insert(new_item).execute()
         return jsonify({'data': response.data, 'message': 'Education created'}), 201
@@ -253,7 +272,11 @@ def update_education(edu_id):
     if request.method == 'OPTIONS':
         return '', 204
     try:
-        data = request.get_json()
+        print(f"=== UPDATE EDUCATION {edu_id} ===")
+        # Prefer JSON when provided; otherwise fall back to form fields
+        data = request.get_json(silent=True) or request.form.to_dict() or {}
+        print(f"Data received: {data}")
+        
         update_data = {}
         for key in ['institute_name', 'certification', 'start_date', 'finish_date']:
             if key in data:
@@ -262,13 +285,34 @@ def update_education(edu_id):
                 if key in ['start_date', 'finish_date'] and value == '':
                     value = None
                 update_data[key] = value
+        
+        # Handle logo upload
+        logo_file = request.files.get('organisation_logo') if request.files else None
+        print(f"Logo file: {logo_file}")
+        if logo_file:
+            content = logo_file.read() or b''
+            print(f"Logo size: {len(content)} bytes")
+            if len(content) > 2 * 1024 * 1024:  # 2 MB max
+                return jsonify({'error': 'Logo too large (max 2 MB)'}), 413
+            # Store as base64 since column is TEXT type
+            import base64
+            update_data['organisation_logo'] = base64.b64encode(content).decode('utf-8')
+        
+        print(f"Update data keys: {list(update_data.keys())}")
         if not update_data:
             return jsonify({'error': 'No fields to update'}), 400
+        
+        # Update all fields including logo using table API (logo is now base64 TEXT)
         response = supabase.table('education').update(update_data).eq('id', edu_id).execute()
-        if response.data:
-            return jsonify({'data': response.data, 'message': 'Education updated'}), 200
-        return jsonify({'error': 'Education not found'}), 404
+        if not response.data:
+            return jsonify({'error': 'Education not found'}), 404
+        
+        return jsonify({'data': response.data, 'message': 'Education updated'}), 200
     except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        print(f"Update education error: {str(e)}")
+        print(f"Traceback:\n{tb}")
         return jsonify({'error': str(e)}), 500
 
 # Delete education
@@ -284,72 +328,6 @@ def delete_education(edu_id):
         return jsonify({'error': 'Education not found'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-# Upload organization logo for education
-@app.route('/api/education/<int:edu_id>/logo', methods=['POST', 'OPTIONS'])
-@require_auth
-def upload_education_logo(edu_id):
-    if request.method == 'OPTIONS':
-        return '', 204
-    try:
-        MAX_BYTES = 2 * 1024 * 1024  # 2 MB for logos
-        clear_flag = request.form.get('clear')
-        uploaded = request.files.get('logo') if request.files else None
-
-        if clear_flag and clear_flag.lower() == 'true':
-            response = supabase.table('education').update({'organization_logo': None}).eq('id', edu_id).execute()
-            if response.data:
-                return jsonify({'message': 'Logo cleared'}), 200
-            return jsonify({'error': 'Education not found'}), 404
-
-        if not uploaded:
-            return jsonify({'error': 'No logo file provided'}), 400
-
-        content = uploaded.read() or b''
-        if len(content) > MAX_BYTES:
-            return jsonify({'error': 'Logo too large (max 2 MB)'}), 413
-        
-        hex_value = '\\\\x' + content.hex()
-        response = supabase.table('education').update({'organization_logo': hex_value}).eq('id', edu_id).execute()
-        if response.data:
-            return jsonify({'message': 'Logo uploaded', 'size_bytes': len(content)}), 200
-        return jsonify({'error': 'Education not found'}), 404
-    except Exception as e:
-        return jsonify({'error': f'Logo upload failed: {str(e)}'}), 500
-
-# Download education organization logo
-@app.route('/api/education/<int:edu_id>/logo', methods=['GET'])
-def get_education_logo(edu_id):
-    try:
-        from flask import send_file
-        import io
-        
-        response = supabase.table('education').select('organization_logo').eq('id', edu_id).execute()
-        if not response.data:
-            return jsonify({'error': 'Education not found'}), 404
-        
-        logo_data = response.data[0].get('organization_logo')
-        if not logo_data:
-            return jsonify({'error': 'No logo found'}), 404
-        
-        hex_str = logo_data
-        if hex_str.startswith('\\\\x'):
-            hex_str = hex_str[2:]
-        
-        file_bytes = bytes.fromhex(hex_str)
-        
-        # Detect image type
-        mimetype = 'image/png'
-        if file_bytes.startswith(b'\\xff\\xd8\\xff'):
-            mimetype = 'image/jpeg'
-        elif file_bytes.startswith(b'GIF'):
-            mimetype = 'image/gif'
-        elif file_bytes.startswith(b'<svg'):
-            mimetype = 'image/svg+xml'
-        
-        return send_file(io.BytesIO(file_bytes), mimetype=mimetype)
-    except Exception as e:
-        return jsonify({'error': f'Logo retrieval failed: {str(e)}'}), 500
 
 # Work experience endpoint
 @app.route('/api/work', methods=['GET'])
