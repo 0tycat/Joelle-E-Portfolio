@@ -27,6 +27,9 @@ function applyTheme(dark) {
     root.style.setProperty('--text-primary', '#e2e8f0')
     root.style.setProperty('--text-secondary', '#cbd5e1')
     root.style.setProperty('--border-color', '#1f2937')
+    root.style.setProperty('--hex-pattern-color', 'rgba(180, 150, 40, 0.35)')
+    root.style.setProperty('--bg-gradient-start', '#0f172a')
+    root.style.setProperty('--bg-gradient-end', '#0a2540')
     // Header card colors - Dark mode
     root.style.setProperty('--header-card-bg', 'linear-gradient(135deg, #0d4a4a 0%, #1a6b6b 100%)')
     root.style.setProperty('--header-card-text', '#e2e8f0')
@@ -56,6 +59,9 @@ function applyTheme(dark) {
     root.style.setProperty('--text-primary', '#0f172a')
     root.style.setProperty('--text-secondary', '#334155')
     root.style.setProperty('--border-color', '#cbd5e1')
+    root.style.setProperty('--hex-pattern-color', 'rgba(180, 150, 40, 0.25)')
+    root.style.setProperty('--bg-gradient-start', '#ffffff')
+    root.style.setProperty('--bg-gradient-end', '#69c0fa')
     // Header card colors - Light mode
     root.style.setProperty('--header-card-bg', 'linear-gradient(135deg, #20b2aa 0%, #48d1cc 100%)')
     root.style.setProperty('--header-card-text', '#ffffff')

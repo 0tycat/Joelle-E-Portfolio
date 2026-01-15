@@ -8,9 +8,33 @@ html,body{height:100%;margin:0;overflow:hidden}
   --text-primary:#e2e8f0;
   --text-secondary:#cbd5e1;
   --border-color:#1f2937;
+  --hex-pattern-color: rgba(212, 175, 55, 0.15);
 }
-body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",sans-serif;background:var(--bg-primary);color:var(--text-primary)}
-.app{display:flex;height:100vh;flex-direction:column;overflow:hidden}
+body{
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",sans-serif;
+  background:var(--bg-primary);
+  color:var(--text-primary);
+  position: relative;
+}
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    linear-gradient(30deg, transparent 0%, transparent 39%, var(--hex-pattern-color) 39%, var(--hex-pattern-color) 42%, transparent 42%, transparent 58%, var(--hex-pattern-color) 58%, var(--hex-pattern-color) 61%, transparent 61%),
+    linear-gradient(90deg, transparent 0%, transparent 48%, var(--hex-pattern-color) 48%, var(--hex-pattern-color) 52%, transparent 52%),
+    linear-gradient(150deg, transparent 0%, transparent 39%, var(--hex-pattern-color) 39%, var(--hex-pattern-color) 42%, transparent 42%, transparent 58%, var(--hex-pattern-color) 58%, var(--hex-pattern-color) 61%, transparent 61%),
+    linear-gradient(180deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+  background-size: 87px 50px, 87px 50px, 87px 50px, 100% 100%;
+  background-position: 0 0, 0 0, 43.5px 25px, 0 0;
+  background-repeat: repeat, repeat, repeat, no-repeat;
+  pointer-events: none;
+  z-index: 0;
+}
+.app{display:flex;height:100vh;flex-direction:column;overflow:hidden;position:relative;z-index:1}
 .content{flex:1;padding:20px;overflow:auto;height:100%}
 .btn{background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:8px 12px;cursor:pointer;background:var(--btn-primary);transition:all 0.2s ease;box-shadow:0 2px 4px rgba(0,0,0,0.1)}
 .btn:hover{background:var(--btn-primary-hover);transform:translateY(-1px);box-shadow:0 4px 8px rgba(0,0,0,0.15)}

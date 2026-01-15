@@ -287,13 +287,13 @@ async function logout(){
 }
 
 .btn-owner-login {
-  background: #ff6b35;
+  background: #69c0fa;
   color: white;
   border: none;
 }
 
 .btn-owner-login:hover {
-  background: #ff5520;
+  background: #4fa8e8;
   transform: translateY(-2px);
 }
 
