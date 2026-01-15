@@ -2,11 +2,6 @@
   <section class="eportfolio-section">
     <!-- Header Card with Profile Info -->
     <div class="eportfolio-header-card">
-      <div class="header-top">
-        <h1 class="profile-name">JOELLE LOW</h1>
-        <p class="profile-tagline">LEARNING TO ADAPT, STRATEGISING TO GROW</p>
-      </div>
-
       <div class="header-content">
         <!-- Profile Card -->
         <div class="profile-card">

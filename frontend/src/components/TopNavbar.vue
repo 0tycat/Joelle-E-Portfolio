@@ -3,7 +3,10 @@
     <div class="navbar-container">
       <!-- Logo/Brand -->
       <div class="navbar-brand">
-        <RouterLink to="/" class="brand-text">JOELLE LOW</RouterLink>
+        <RouterLink to="/" class="brand-text">
+          <div class="brand-name">JOELLE LOW</div>
+          <div class="brand-tagline">LEARNING TO ADAPT, STRATEGISING TO GROW</div>
+        </RouterLink>
       </div>
 
       <!-- Menu Toggle for Mobile -->
@@ -62,8 +65,8 @@
 
         <!-- Auth Section -->
         <li class="nav-item auth-item">
-          <button v-if="!isAuthed" class="btn btn-nav" @click="goLogin">Login</button>
-          <button v-else class="btn btn-nav secondary" @click="logout">Logout</button>
+          <button v-if="!isAuthed" class="btn btn-nav btn-owner-login" @click="goLogin">Owner's Login</button>
+          <button v-else class="btn btn-nav btn-logout" @click="logout">Logout</button>
         </li>
       </ul>
 
@@ -147,10 +150,26 @@ async function logout(){
   text-decoration: none;
   letter-spacing: 1px;
   transition: color 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .brand-text:hover {
   color: #3b82f6;
+}
+
+.brand-name {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.brand-tagline {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  opacity: 0.9;
 }
 
 .navbar-toggle {
@@ -274,24 +293,35 @@ async function logout(){
   font-weight: 600;
 }
 
-.btn-nav:not(.secondary) {
-  background: #3b82f6;
+.btn-owner-login {
+  background: #ff6b35;
   color: white;
+  border: none;
 }
 
-.btn-nav:not(.secondary):hover {
-  background: #2563eb;
+.btn-owner-login:hover {
+  background: #ff5520;
+  transform: translateY(-2px);
 }
 
-.btn-nav.secondary {
+.btn-logout {
   background: transparent;
   color: var(--text-secondary);
   border: 1px solid var(--border-color);
 }
 
-.btn-nav.secondary:hover {
+.btn-logout:hover {
   background: rgba(59, 130, 246, 0.1);
   color: var(--text-primary);
+}
+
+.btn-nav:not(.secondary):not(.btn-owner-login):not(.btn-logout) {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-nav:not(.secondary):not(.btn-owner-login):not(.btn-logout):hover {
+  background: #2563eb;
 }
 
 .theme-toggle-navbar {

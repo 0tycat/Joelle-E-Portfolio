@@ -27,6 +27,18 @@ function applyTheme(dark) {
     root.style.setProperty('--text-primary', '#e2e8f0')
     root.style.setProperty('--text-secondary', '#cbd5e1')
     root.style.setProperty('--border-color', '#1f2937')
+    // Header card colors - Dark mode
+    root.style.setProperty('--header-card-bg', 'linear-gradient(135deg, #0d4a4a 0%, #1a6b6b 100%)')
+    root.style.setProperty('--header-card-text', '#e2e8f0')
+    root.style.setProperty('--motto-text', '#d4af37')
+    root.style.setProperty('--value-item-heading', '#e2e8f0')
+    root.style.setProperty('--value-item-text', 'rgba(226, 232, 240, 0.9)')
+    root.style.setProperty('--read-more-btn-color', '#4dd9d5')
+    // Card colors - Dark mode
+    root.style.setProperty('--card-bg', '#1a2332')
+    root.style.setProperty('--card-text', '#e2e8f0')
+    root.style.setProperty('--card-text-secondary', '#cbd5e1')
+    root.style.setProperty('--card-border', '#2d3e52')
     // Button colors - Dark mode
     root.style.setProperty('--btn-primary', '#00a89d')       // Vibrant teal
     root.style.setProperty('--btn-primary-hover', '#008a84')
@@ -44,6 +56,18 @@ function applyTheme(dark) {
     root.style.setProperty('--text-primary', '#0f172a')
     root.style.setProperty('--text-secondary', '#334155')
     root.style.setProperty('--border-color', '#cbd5e1')
+    // Header card colors - Light mode
+    root.style.setProperty('--header-card-bg', 'linear-gradient(135deg, #20b2aa 0%, #48d1cc 100%)')
+    root.style.setProperty('--header-card-text', '#ffffff')
+    root.style.setProperty('--motto-text', '#d4af37')
+    root.style.setProperty('--value-item-heading', '#000000')
+    root.style.setProperty('--value-item-text', 'rgba(0, 0, 0, 0.85)')
+    root.style.setProperty('--read-more-btn-color', '#2d5a47')
+    // Card colors - Light mode
+    root.style.setProperty('--card-bg', '#ffffff')
+    root.style.setProperty('--card-text', '#0f172a')
+    root.style.setProperty('--card-text-secondary', '#475569')
+    root.style.setProperty('--card-border', '#e2e8f0')
     // Button colors - Light mode
     root.style.setProperty('--btn-primary', '#00a89d')       // Vibrant teal
     root.style.setProperty('--btn-primary-hover', '#008a84')
