@@ -8,6 +8,7 @@ import io
 import uuid
 import requests
 import psycopg2
+import base64
 from werkzeug.utils import secure_filename
 
 # Load environment variables
@@ -295,7 +296,6 @@ def update_education(edu_id):
             if len(content) > 2 * 1024 * 1024:  # 2 MB max
                 return jsonify({'error': 'Logo too large (max 2 MB)'}), 413
             # Store as base64 since column is TEXT type
-            import base64
             update_data['organisation_logo'] = base64.b64encode(content).decode('utf-8')
         
         print(f"Update data keys: {list(update_data.keys())}")
@@ -562,6 +562,116 @@ def delete_community(comm_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Upload files to community service
+@app.route('/api/community/<int:comm_id>/files', methods=['POST', 'OPTIONS'])
+@require_auth
+def upload_community_files(comm_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        MAX_BYTES = 10 * 1024 * 1024  # 10 MB per file
+        uploaded_files = []
+        if request.files:
+            uploaded_files.extend(request.files.getlist('files'))
+            uploaded_files.extend(request.files.getlist('files[]'))
+            single_file = request.files.get('file')
+            if single_file:
+                uploaded_files.append(single_file)
+            if not uploaded_files:
+                uploaded_files.extend(list(request.files.values()))
+
+        if not uploaded_files:
+            return jsonify({'error': 'No files provided'}), 400
+
+        base64_values = []
+        total_size = 0
+        
+        for uploaded in uploaded_files:
+            content = uploaded.read() or b''
+            if len(content) > MAX_BYTES:
+                return jsonify({'error': f'File {uploaded.filename} too large (max 10 MB per file)'}), 413
+            total_size += len(content)
+            base64_value = base64.b64encode(content).decode('utf-8')
+            base64_values.append(base64_value)
+        
+        store_value = base64_values if len(base64_values) > 1 else base64_values[0]
+
+        response = supabase.table('community_service').update({'project_files': store_value}).eq('id', comm_id).execute()
+        if response.data:
+            return jsonify({
+                'message': f'{len(base64_values)} file(s) uploaded', 
+                'file_count': len(base64_values),
+                'total_size_bytes': total_size
+            }), 200
+        return jsonify({'error': 'Community service not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Download community file
+@app.route('/api/community/<int:comm_id>/files/<int:file_index>', methods=['GET'])
+def download_community_file(comm_id, file_index):
+    try:
+        from flask import send_file
+        response = supabase.table('community_service').select('project_files').eq('id', comm_id).execute()
+        if not response.data:
+            return jsonify({'error': 'Community service not found'}), 404
+        
+        files = response.data[0].get('project_files')
+        if not files:
+            return jsonify({'error': 'No files found'}), 404
+        
+        # Handle single file or array
+        if isinstance(files, str):
+            base64_str = files
+        elif isinstance(files, list):
+            if file_index >= len(files):
+                return jsonify({'error': 'File index out of range'}), 404
+            base64_str = files[file_index]
+        else:
+            return jsonify({'error': 'Invalid file data'}), 500
+        
+        # Decode base64
+        file_bytes = base64.b64decode(base64_str)
+        
+        return send_file(
+            io.BytesIO(file_bytes),
+            mimetype='application/octet-stream',
+            as_attachment=True,
+            download_name=f'community_{comm_id}_file_{file_index}'
+        )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Delete community file
+@app.route('/api/community/<int:comm_id>/files/<int:file_index>', methods=['DELETE', 'OPTIONS'])
+@require_auth
+def delete_community_file(comm_id, file_index):
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        response = supabase.table('community_service').select('project_files').eq('id', comm_id).execute()
+        if not response.data:
+            return jsonify({'error': 'Community service not found'}), 404
+        
+        current_files = response.data[0].get('project_files')
+        if isinstance(current_files, list):
+            base64_values = current_files
+        elif isinstance(current_files, str):
+            base64_values = [current_files] if current_files else []
+        else:
+            base64_values = []
+        
+        if 0 <= file_index < len(base64_values):
+            base64_values.pop(file_index)
+        
+        new_value = base64_values if len(base64_values) > 1 else (base64_values[0] if base64_values else None)
+        upd = supabase.table('community_service').update({'project_files': new_value}).eq('id', comm_id).execute()
+        if upd.data:
+            return jsonify({'message': 'File deleted'}), 200
+        return jsonify({'error': 'Failed to update'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # Projects/Other information endpoint
 @app.route('/api/projects', methods=['GET'])
 def get_projects():
@@ -582,6 +692,11 @@ def create_project():
         new_item = {
             'project_name': data.get('project_name'),
             'description': data.get('description'),
+            'takeaways': data.get('takeaways'),
+            'skills_applied': data.get('skills_applied'),
+            'start_date': (None if data.get('start_date') == '' else data.get('start_date')),
+            'end_date': (None if data.get('end_date') == '' else data.get('end_date')),
+            'video_demo': data.get('video_demo'),
             'technologies': data.get('technologies'),
             'url': data.get('url')
         }
@@ -600,9 +715,12 @@ def update_project(proj_id):
     try:
         data = request.get_json()
         update_data = {}
-        for key in ['project_name', 'description', 'technologies', 'url']:
+        for key in ['project_name', 'description', 'takeaways', 'skills_applied', 'start_date', 'end_date', 'video_demo', 'technologies', 'url']:
             if key in data:
-                update_data[key] = data[key]
+                value = data[key]
+                if key in ['start_date', 'end_date'] and value == '':
+                    value = None
+                update_data[key] = value
         if not update_data:
             return jsonify({'error': 'No fields to update'}), 400
         response = supabase.table('other_information').update(update_data).eq('id', proj_id).execute()
@@ -623,6 +741,116 @@ def delete_project(proj_id):
         if response.data:
             return jsonify({'message': 'Project deleted'}), 200
         return jsonify({'error': 'Project not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Upload files to project
+@app.route('/api/projects/<int:proj_id>/files', methods=['POST', 'OPTIONS'])
+@require_auth
+def upload_project_files(proj_id):
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        MAX_BYTES = 10 * 1024 * 1024  # 10 MB per file
+        uploaded_files = []
+        if request.files:
+            uploaded_files.extend(request.files.getlist('files'))
+            uploaded_files.extend(request.files.getlist('files[]'))
+            single_file = request.files.get('file')
+            if single_file:
+                uploaded_files.append(single_file)
+            if not uploaded_files:
+                uploaded_files.extend(list(request.files.values()))
+
+        if not uploaded_files:
+            return jsonify({'error': 'No files provided'}), 400
+
+        base64_values = []
+        total_size = 0
+        
+        for uploaded in uploaded_files:
+            content = uploaded.read() or b''
+            if len(content) > MAX_BYTES:
+                return jsonify({'error': f'File {uploaded.filename} too large (max 10 MB per file)'}), 413
+            total_size += len(content)
+            base64_value = base64.b64encode(content).decode('utf-8')
+            base64_values.append(base64_value)
+        
+        store_value = base64_values if len(base64_values) > 1 else base64_values[0]
+
+        response = supabase.table('other_information').update({'project_files': store_value}).eq('id', proj_id).execute()
+        if response.data:
+            return jsonify({
+                'message': f'{len(base64_values)} file(s) uploaded', 
+                'file_count': len(base64_values),
+                'total_size_bytes': total_size
+            }), 200
+        return jsonify({'error': 'Project not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Download project file
+@app.route('/api/projects/<int:proj_id>/files/<int:file_index>', methods=['GET'])
+def download_project_file(proj_id, file_index):
+    try:
+        from flask import send_file
+        response = supabase.table('other_information').select('project_files').eq('id', proj_id).execute()
+        if not response.data:
+            return jsonify({'error': 'Project not found'}), 404
+        
+        files = response.data[0].get('project_files')
+        if not files:
+            return jsonify({'error': 'No files found'}), 404
+        
+        # Handle single file or array
+        if isinstance(files, str):
+            base64_str = files
+        elif isinstance(files, list):
+            if file_index >= len(files):
+                return jsonify({'error': 'File index out of range'}), 404
+            base64_str = files[file_index]
+        else:
+            return jsonify({'error': 'Invalid file data'}), 500
+        
+        # Decode base64
+        file_bytes = base64.b64decode(base64_str)
+        
+        return send_file(
+            io.BytesIO(file_bytes),
+            mimetype='application/octet-stream',
+            as_attachment=True,
+            download_name=f'project_{proj_id}_file_{file_index}'
+        )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Delete project file
+@app.route('/api/projects/<int:proj_id>/files/<int:file_index>', methods=['DELETE', 'OPTIONS'])
+@require_auth
+def delete_project_file(proj_id, file_index):
+    if request.method == 'OPTIONS':
+        return '', 204
+    try:
+        response = supabase.table('other_information').select('project_files').eq('id', proj_id).execute()
+        if not response.data:
+            return jsonify({'error': 'Project not found'}), 404
+        
+        current_files = response.data[0].get('project_files')
+        if isinstance(current_files, list):
+            base64_values = current_files
+        elif isinstance(current_files, str):
+            base64_values = [current_files] if current_files else []
+        else:
+            base64_values = []
+        
+        if 0 <= file_index < len(base64_values):
+            base64_values.pop(file_index)
+        
+        new_value = base64_values if len(base64_values) > 1 else (base64_values[0] if base64_values else None)
+        upd = supabase.table('other_information').update({'project_files': new_value}).eq('id', proj_id).execute()
+        if upd.data:
+            return jsonify({'message': 'File deleted'}), 200
+        return jsonify({'error': 'Failed to update'}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
