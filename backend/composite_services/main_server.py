@@ -257,7 +257,7 @@ def create_education():
             content = logo_file.read() or b''
             if len(content) > 2 * 1024 * 1024:  # 2 MB max
                 return jsonify({'error': 'Logo too large (max 2 MB)'}), 413
-            new_item['organisation_logo'] = '\\x' + content.hex()
+            new_item['organisation_logo'] = base64.b64encode(content).decode('utf-8')
         
         new_item = {k: v for k, v in new_item.items() if v is not None}
         response = supabase.table('education').insert(new_item).execute()
@@ -345,14 +345,28 @@ def create_work():
     if request.method == 'OPTIONS':
         return '', 204
     try:
-        data = request.get_json()
+        # Handle both JSON and form-data
+        if request.is_json:
+            data = request.get_json()
+        else:
+            data = request.form.to_dict()
+        
         new_item = {
-            'company': data.get('company'),
-            'position': data.get('position'),
+            'company_name': data.get('company_name'),
+            'role': data.get('role'),
             'start_date': (None if data.get('start_date') == '' else data.get('start_date')),
             'end_date': (None if data.get('end_date') == '' else data.get('end_date')),
             'description': data.get('description')
         }
+        
+        # Handle logo upload
+        logo_file = request.files.get('organisation_logo') if request.files else None
+        if logo_file:
+            content = logo_file.read() or b''
+            if len(content) > 2 * 1024 * 1024:  # 2 MB max
+                return jsonify({'error': 'Logo too large (max 2 MB)'}), 413
+            new_item['organization_logo'] = base64.b64encode(content).decode('utf-8')
+        
         new_item = {k: v for k, v in new_item.items() if v is not None}
         response = supabase.table('work_experience').insert(new_item).execute()
         return jsonify({'data': response.data, 'message': 'Work experience created'}), 201
@@ -366,14 +380,28 @@ def update_work(work_id):
     if request.method == 'OPTIONS':
         return '', 204
     try:
-        data = request.get_json()
+        # Handle both JSON and form-data
+        if request.is_json:
+            data = request.get_json()
+        else:
+            data = request.form.to_dict()
+        
         update_data = {}
-        for key in ['company', 'position', 'start_date', 'end_date', 'description']:
+        for key in ['company_name', 'role', 'start_date', 'end_date', 'description']:
             if key in data:
                 value = data[key]
                 if key in ['start_date', 'end_date'] and value == '':
                     value = None
                 update_data[key] = value
+        
+        # Handle logo upload
+        logo_file = request.files.get('organisation_logo') if request.files else None
+        if logo_file:
+            content = logo_file.read() or b''
+            if len(content) > 2 * 1024 * 1024:  # 2 MB max
+                return jsonify({'error': 'Logo too large (max 2 MB)'}), 413
+            update_data['organization_logo'] = base64.b64encode(content).decode('utf-8')
+        
         if not update_data:
             return jsonify({'error': 'No fields to update'}), 400
         response = supabase.table('work_experience').update(update_data).eq('id', work_id).execute()
@@ -421,8 +449,8 @@ def upload_work_logo(work_id):
         if len(content) > MAX_BYTES:
             return jsonify({'error': 'Logo too large (max 2 MB)'}), 413
         
-        hex_value = '\\\\x' + content.hex()
-        response = supabase.table('work_experience').update({'organization_logo': hex_value}).eq('id', work_id).execute()
+        base64_value = base64.b64encode(content).decode('utf-8')
+        response = supabase.table('work_experience').update({'organization_logo': base64_value}).eq('id', work_id).execute()
         if response.data:
             return jsonify({'message': 'Logo uploaded', 'size_bytes': len(content)}), 200
         return jsonify({'error': 'Work experience not found'}), 404
@@ -444,15 +472,18 @@ def get_work_logo(work_id):
         if not logo_data:
             return jsonify({'error': 'No logo found'}), 404
         
-        hex_str = logo_data
-        if hex_str.startswith('\\\\x'):
-            hex_str = hex_str[2:]
-        
-        file_bytes = bytes.fromhex(hex_str)
+        # Convert base64 to bytes (handle legacy hex format too)
+        base64_str = logo_data
+        if base64_str.startswith('\\x'):  # Legacy hex format
+            hex_str = base64_str[2:]
+            file_bytes = bytes.fromhex(hex_str)
+        else:
+            # Base64 format (current)
+            file_bytes = base64.b64decode(base64_str)
         
         # Detect image type
         mimetype = 'image/png'
-        if file_bytes.startswith(b'\\xff\\xd8\\xff'):
+        if file_bytes.startswith(b'\xff\xd8\xff'):
             mimetype = 'image/jpeg'
         elif file_bytes.startswith(b'GIF'):
             mimetype = 'image/gif'
@@ -819,7 +850,7 @@ def upload_e_portfolio_file(item_id):
         if not uploaded_files:
             return jsonify({'error': 'No files provided'}), 400
 
-        hex_values = []
+        base64_values = []
         total_size = 0
         
         for uploaded in uploaded_files:
@@ -827,11 +858,11 @@ def upload_e_portfolio_file(item_id):
             if len(content) > MAX_BYTES:
                 return jsonify({'error': f'File {uploaded.filename} too large (max 10 MB per file)'}), 413
             total_size += len(content)
-            hex_value = '\\x' + content.hex()
-            hex_values.append(hex_value)
+            base64_value = base64.b64encode(content).decode('utf-8')
+            base64_values.append(base64_value)
         
         # Store as array if multiple files, single string if one file
-        store_value = hex_values if len(hex_values) > 1 else hex_values[0]
+        store_value = base64_values if len(base64_values) > 1 else base64_values[0]
 
         try:
             response = supabase.table('e_portfolio').update({'artefacts_evidence_files': store_value}).eq('id', item_id).execute()
@@ -839,8 +870,8 @@ def upload_e_portfolio_file(item_id):
                 raise Exception(str(response.error))
             if response.data:
                 return jsonify({
-                    'message': f'{len(hex_values)} file(s) uploaded', 
-                    'file_count': len(hex_values),
+                    'message': f'{len(base64_values)} file(s) uploaded', 
+                    'file_count': len(base64_values),
                     'total_size_bytes': total_size
                 }), 200
             # No data returned counts as not found
@@ -865,7 +896,7 @@ def upload_e_portfolio_file(item_id):
                         raise
 
                 public_urls = []
-                for uploaded, content in zip(uploaded_files, [bytes.fromhex(h[2:] if h.startswith('\\x') else h) for h in hex_values]):
+                for uploaded, content in zip(uploaded_files, [base64.b64decode(b) if not b.startswith('\\x') else bytes.fromhex(b[2:]) for b in base64_values]):
                     filename = secure_filename(uploaded.filename or 'evidence')
                     path = f"{item_id}/{uuid.uuid4().hex}_{filename}"
                     mime = uploaded.mimetype or 'application/octet-stream'

@@ -35,7 +35,7 @@
     <div v-else>
       <div v-for="w in filteredAndSorted" :key="w.id" class="card">
         <div style="display:flex; gap:12px; align-items:start">
-          <img v-if="w.organization_logo" :src="getLogoUrl('work', w.id)" alt="Logo" style="width:48px; height:48px; object-fit:contain; border-radius:4px" />
+          <img v-if="w.organization_logo" :src="base64ToDataUrl(w.organization_logo)" alt="Logo" style="width:48px; height:48px; object-fit:contain; border-radius:4px" />
           <div style="flex:1">
             <strong>{{ w.company_name }}</strong>
             <div>{{ w.role }}</div>
@@ -144,6 +144,9 @@ const deleteItemLabel = ref('')
 const confirmMessage = computed(() => `Delete "${deleteItemLabel.value}"? This cannot be undone.`)
 
 function getLogoUrl(type, id) {
+  // For work logos, we get base64 directly from the work data
+  // This is now handled by the display using base64ToDataUrl()
+  // This function is kept for backward compatibility with API endpoints
   const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
   return `${API_URL}/api/${type}/${id}/logo`
 }
@@ -325,5 +328,11 @@ function handleDescriptionKeydown(event, item){
       textarea.selectionStart = textarea.selectionEnd = cursorPos + bullet.length
     }, 0)
   }
+}
+
+function base64ToDataUrl(base64String) {
+  if (!base64String) return null
+  // Base64 text can be used directly in a data URL
+  return `data:image/jpeg;base64,${base64String}`
 }
 </script>
