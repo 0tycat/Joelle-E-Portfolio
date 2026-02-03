@@ -39,14 +39,14 @@ async function login(){
   error.value = ''
   const ok = await loginApi(email.value, password.value)
   if(ok){
-    router.push('/skills')
+    router.push('/portfolio')
   } else {
     error.value = 'Login failed. Check credentials.'
   }
 }
 
 if(isAuthenticated()){
-  router.push('/skills')
+  router.push('/portfolio')
 }
 </script>
 
