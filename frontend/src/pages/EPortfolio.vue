@@ -10,7 +10,7 @@
           </div>
           <h2 class="profile-full-name">Low En Tong Joelle</h2>
           <p class="profile-degree">Information Systems<br/>Undergraduate @ SMU</p>
-          <a href="https://linkedin.com" target="_blank" class="linkedin-icon">
+          <a href="https://www.linkedin.com/in/joelle-l-23b90a2b9/" target="_blank" class="linkedin-icon">
             <i class="fab fa-linkedin"></i>
           </a>
         </div>
