@@ -29,18 +29,11 @@
           </RouterLink>
         </li>
 
-        <!-- Resume Dropdown -->
-        <li class="nav-item dropdown">
-          <button class="nav-link dropdown-toggle" @click="toggleResume">
+        <!-- Resume Link -->
+        <li class="nav-item">
+          <RouterLink to="/resume" @click="closeMenu" class="nav-link">
             RESUME
-            <i class="fas fa-chevron-down"></i>
-          </button>
-          <ul class="dropdown-menu" v-show="resumeOpen">
-            <li><RouterLink to="/resume" @click="closeMenu" class="dropdown-link">Full Resume</RouterLink></li>
-            <li><RouterLink to="/education" @click="closeMenu" class="dropdown-link">Education</RouterLink></li>
-            <li><RouterLink to="/skills" @click="closeMenu" class="dropdown-link">Skills</RouterLink></li>
-            <li><RouterLink to="/experience" @click="closeMenu" class="dropdown-link">Work Experience</RouterLink></li>
-          </ul>
+          </RouterLink>
         </li>
 
         <!-- Projects -->
@@ -80,17 +73,10 @@ import { useTheme } from '../lib/theme.js'
 
 const router = useRouter()
 const isOpen = ref(false)
-const resumeOpen = ref(false)
 const { isDark, toggleTheme: doToggleTheme } = useTheme()
 
 function closeMenu() {
   isOpen.value = false
-  resumeOpen.value = false
-}
-
-function toggleResume(e) {
-  e.preventDefault()
-  resumeOpen.value = !resumeOpen.value
 }
 
 function toggleTheme() {
