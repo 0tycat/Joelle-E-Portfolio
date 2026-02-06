@@ -50,15 +50,15 @@
         <div class="values-content">
           <div class="value-item">
             <h4>Cooperation</h4>
-            <p>I value cooperation and clear communication in projects ___</p>
+              <p>I value cooperation and clear communication because they keep projects and activity planning on track.</p>
           </div>
           <div class="value-item">
             <h4>Adapt</h4>
-            <p>I always adapt when I am required to learn something new ___</p>
+            <p>I adapt quickly because adaptability is essential in a fast-growing, technologically advanced industry.</p>
           </div>
           <div class="value-item">
             <h4>Audacious</h4>
-            <p>I am audacious when it comes to ___</p>
+            <p>I am audacious and willing to take the step forward, even when it gets tough.</p>
           </div>
         </div>
       </div>
